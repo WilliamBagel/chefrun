@@ -1,0 +1,32 @@
+<html>
+    <head>
+        <link rel="stylesheet" href="./dist/signup-style.css">
+    </head>
+    <body>
+        <!-- <script type = 'importmap'>
+            
+        </script> -->   
+                
+        <form target = "_self" id = "loginform">
+            <div class="container">
+            <label for="uname"><b>Username</b></label>
+            <input id = "username-input" type="text" placeholder="Enter Username" required>
+            <label id = "username-feedback" class = "feedback-hidden" ></label>
+
+            <label for="psw"><b>Password</b></label>
+            <input id = "password-input" type="password" placeholder="Enter Password" required>
+            <label id = "password-feedback" class = "feedback-hidden"></label>
+
+            <button type="submit">Sign up</button>
+            <label>
+                <input type="checkbox" name="remember"> Remember me
+            </label>
+            </div>
+            
+            <div class="container" style="background-color:#f1f1f1">
+            <button type="button" class="cancelbtn">Cancel</button>
+            </div>
+        </form>
+        <script src = "./dist/signup.js"></script>
+    </body>
+</html>

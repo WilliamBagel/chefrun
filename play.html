@@ -1,0 +1,37 @@
+<html>
+    <head>
+        <link rel="stylesheet" href="./dist/sandbox-style.css">
+    </head>
+    <body>
+        <!-- <script type = 'importmap'>
+            
+        </script> -->   
+        <div id = 'connection-div'>
+            <input type = 'number' id = "server-code" minlength = 6 maxlength= 6 autocomplete= false>
+            <button id = 'join-room'>Join Game</button>
+            <button id = 'host-room'>Host Game</button>
+            <!-- <button id = 'update-presence'>Update Presence</button> -->
+            <input type = 'text' id = "server-port" minlength = 4 maxlength= 50 autocomplete= false>
+            <button id = 'set-server-port'>Connect to server</button>
+            <select name="Character" id="character-selector">
+              <option value="Rat">Rat</option>
+              <option value="Banana">Banana</option>
+              <option value="Potato">Potato(needs fix)</option>
+            </select>
+            <button id = 'start-game'>Start Game</button>
+            <p id = 'gamecode-display'>you have no code (x_x)</p>
+        </div>
+        <script type="importmap">
+            {
+                "imports": {
+                    "three": "https://threejs.org/build/three.module.js"
+                }
+            }
+        </script>
+        <!-- <script src="https://html2canvas.hertzen.com/dist/html2canvas.js"></script> -->
+        <script src="https://cdn.pubnub.com/sdk/javascript/pubnub.7.0.0.js"></script>
+        <script src = "https://cdn.socket.io/socket.io-3.0.5.min.js"></script>
+        <script type = "module" src = ".\dist\play.js"></script>
+            
+    </body>
+</html>

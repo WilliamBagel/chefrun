@@ -1,0 +1,43 @@
+<html>
+    <head>
+        <link rel="stylesheet" href="./dist/sandbox-style.css">
+    </head>
+    <body>
+        <!-- <script type = 'importmap'>
+            
+        </script> -->   
+        <div id = 'connection-div'>
+            <input type = 'number' id = "server-code" minlength = 6 maxlength= 6 autocomplete= false>
+            <button id = 'connect-server'>Connect to Server</button>
+            <button id = 'host-server'>Host Server</button>
+            <button id = 'update-presence'>Update Presence</button>
+            <input type = 'text' id = "server-port" minlength = 4 maxlength= 50 autocomplete= false>
+            <button id = 'set-server-port'>Set the port address</button>
+            <p id = 'gamecode-display'>you have no code (x_x)</p>
+        </div>
+        <script type="importmap">
+            {
+                "imports": {
+                    "three": "https://threejs.org/build/three.module.js"
+                }
+            }
+        </script>
+        <!-- <script src="https://html2canvas.hertzen.com/dist/html2canvas.js"></script> -->
+        <script src="https://cdn.pubnub.com/sdk/javascript/pubnub.7.0.0.js"></script>
+        <script src = "https://cdn.socket.io/socket.io-3.0.5.min.js"></script>
+        <script src = ".\dist\Randomizer.js"></script>
+        <!-- <script src = "https://unpkg.com/three@0.122.0/dist/cannon-es.js"></script>
+        <script src = "https://unpkg.com/three@0.122.0/build/three.module.js"></script> -->
+        <!-- <script src = "https://schteppe.github.io/cannon.js/build/cannon.js"></script> -->
+        <!-- <script src="https://schteppe.github.io/cannon.js/libs/Three.js"></script>
+        <script src="https://schteppe.github.io/cannon.js/build/cannon.js"></script>
+        <script src="https://schteppe.github.io/cannon.js/build/cannon.demo.js"></script>
+        <script src="https://schteppe.github.io/cannon.js/libs/dat.gui.js"></script>
+        <script src="https://schteppe.github.io/cannon.js/libs/TrackballControls.js"></script>
+        <script src="https://schteppe.github.io/cannon.js/libs/Detector.js"></script>
+        <script src="https://schteppe.github.io/cannon.js/libs/Stats.js"></script>
+		<script src="https://schteppe.github.io/cannon.js/libs/smoothie.js"></script> -->
+        <script type = "module" src = ".\dist\sandbox.js"></script>
+            
+    </body>
+</html>

@@ -1,0 +1,8 @@
+#connection-div {
+  margin: auto;
+  width: 100%;
+  border: 2px;
+  border-style: solid;
+  border-color: black;
+  padding: 1%;
+}
