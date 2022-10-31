@@ -10,7 +10,8 @@ var gameLoad;
 function init(character) {
   const world = new World();
   TestGame.character.model = character
-  gameLoad = world.loadGame(TestGame);
+  gameLoad = world.loadGame(TestGame); 
+  window.game = gameLoad
   world.initGame()
   world.addGameLoadListener(()=>{
     const members = MyConnection.members
