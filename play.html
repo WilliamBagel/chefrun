@@ -1,39 +1,77 @@
 <html>
-    <head>
-        <link rel="stylesheet" href="./dist/sandbox-style.css">
-    </head>
-    <body>
-        <!-- <script type = 'importmap'>
-            
-        </script> -->   
-        <div id = 'connection-div'>
-            <input type = 'number' id = "server-code" minlength = 6 maxlength= 6 autocomplete= false>
-            <button id = 'join-room'>Join Game</button>
-            <button id = 'host-room'>Host Game</button>
-            <!-- <button id = 'update-presence'>Update Presence</button> -->
-            <input type = 'text' id = "server-port" minlength = 4 maxlength= 50 autocomplete= false>
-            <button id = 'set-server-port'>Connect to server</button>
-            <select name="Character" id="character-selector">
-              <option value="Rat">Rat</option>
-              <option value="Banana">Banana</option>
-              <option value="Potato">Potato(needs fix)</option>
-              <option value="stove">Stove(because why not)</option>
-              <!-- <option value="squareWatermelon">Watermelon</option> -->
-            </select>
-            <button id = 'start-game'>Start Game</button>
-            <p id = 'gamecode-display'>you have no code (x_x)</p>
-        </div>
-        <script type="importmap">
-            {
-                "imports": {
-                    "three": "https://threejs.org/build/three.module.js"
-                }
+
+<head>
+  <link rel="stylesheet" href="./dist/play-style.css">
+</head>
+
+<body>
+  <script type='importmap'>
+          {
+            "imports": {
+              "vue": "https://unpkg.com/vue@3.2.41/dist/vue.esm-browser.js",
+              "three": "https://unpkg.com/three@0.141.0/build/three.module.js"
             }
+          }
         </script>
-        <!-- <script src="https://html2canvas.hertzen.com/dist/html2canvas.js"></script> -->
-        <script src="https://cdn.pubnub.com/sdk/javascript/pubnub.7.0.0.js"></script>
-        <script src = "https://cdn.socket.io/socket.io-3.0.5.min.js"></script>
-        <script type = "module" src = ".\dist\play.js"></script>
-            
-    </body>
+  <!-- <script src="https://html2canvas.hertzen.com/dist/html2canvas.js"></script> -->
+  <script src="https://cdn.pubnub.com/sdk/javascript/pubnub.7.0.0.js"></script>
+  <script src="https://cdn.socket.io/socket.io-3.0.5.min.js"></script>
+  <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
+  <!-- <script src=".\dist\play.vue"></script> -->
+  <script type = "module">
+    import { createApp, ref } from 'vue'
+    import * as file from './dist/play.js'
+    createApp({
+      setup() {
+        document.getElementById("app").hidden = false
+        return file
+      }
+    }).mount('#app')
+  </script>
+  <div id = 'app' hidden = true>
+    <div id = "connect-choice" v-if="Page == 'connect-choice'">
+      <header>Choose Server</header>
+      <button @click="ConnectType = 'global',SetServerPort(), Page='connection'">global</button>
+      <button @click="ConnectType = 'local', Page='connection'">local</button>
+    </div>
+    <div v-if="Page == 'connection'" id = 'connection-page'>
+      <div>
+        <header>Game Rooms:</header>
+        <li v-for="room in GameRooms">
+          <button @click=JoinRoom(room.code)>{{"Code: " +room.code + ", player#: " + room.players}}</button>
+        </li>
+      </div>
+      <div>
+        <input v-model="PlayerName" placeholder="name" minlength=1 maxlength="10" type='string'>
+      <div v-if="ConnectType == 'local'">
+        <input type='text' v-model="ServerPort" placeholder="servercode" minlength=4 maxlength=50 autocomplete=false>
+        <button @click ="SetServerPort">Connect to server</button>
+      </div>
+      <input v-if="GameRole != 'host'" placeholder="gamecode" v-model="GameCode" type='number' minlength=6 maxlength=6 autocomplete=false>
+      <div class = "flat-bar"></div>
+      <button @click="joinRoom(GameCode)">Join Game</button>
+      <button @click="HostRoom()">Host Game</button>
+      <p v-show="Warn != ''" class="warn">{{Warn}}</p>
+      </div>
+    </div>
+    <div v-if="Page == 'lobby'" id = 'lobby-page'>
+      <div>
+        <button v-if="GameRole == 'host'" @click='StartGame'>Start Game</button>
+        <p v-text='GamecodeDisplay'></p>
+        <select name="Character" @change="SetCharacter" v-model="Character">
+          <option value="Rat">Rat</option>
+          <option value="Banana">Banana</option>
+          <option value="Potato">Potato(needs fix)</option>
+          <option value="stove">Stove(because why not)</option>
+          <!-- <option value="squareWatermelon">Watermelon</option> -->
+        </select>
+      </div>
+      <li v-for="player in PlayerList">
+        <p>{{player.name + " is " + player.model}}</p>
+      </li>
+    </div>
+    <div v-if="Page == 'game'"></div>
+  </div>
+</body>
+
 </html>

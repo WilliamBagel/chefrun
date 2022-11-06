@@ -1,4 +1,4 @@
-import * as THREE from "https://unpkg.com/three@0.141.0/build/three.module.js";//"https://threejs.org/build/three.module.js"; 
+import * as THREE from "three";//"https://threejs.org/build/three.module.js"; 
 import * as CANNON from 'https://pmndrs.github.io/cannon-es/dist/cannon-es.js';
 import * as SkeletonUtils from "https://threejs.org/examples/jsm/utils/SkeletonUtils.js";
 import { GLTFLoader } from 'https://threejs.org/examples/jsm/loaders/GLTFLoader.js';
