@@ -2,6 +2,7 @@
 
 <head>
   <link rel="stylesheet" href="./dist/play-style.css">
+  <link rel="icon" type="image/png" href="/assets/favicon.png">
 </head>
 
 <body>
@@ -49,26 +50,37 @@
       </div>
       <input v-if="GameRole != 'host'" placeholder="gamecode" v-model="GameCode" type='number' minlength=6 maxlength=6 autocomplete=false>
       <div class = "flat-bar"></div>
-      <button @click="joinRoom(GameCode)">Join Game</button>
+      <button @click="JoinRoom(GameCode)">Join Game</button>
       <button @click="HostRoom()">Host Game</button>
       <p v-show="Warn != ''" class="warn">{{Warn}}</p>
+      <p v-show="Confirm != ''" class="confirm">{{Confirm}}</p>
       </div>
     </div>
-    <div v-if="Page == 'lobby'" id = 'lobby-page'>
-      <div>
-        <button v-if="GameRole == 'host'" @click='StartGame'>Start Game</button>
-        <p v-text='GamecodeDisplay'></p>
-        <select name="Character" @change="SetCharacter" v-model="Character">
+    <div v-if="Page == 'lobby'" class = 'lobby-page'>
+      <div class = 'lobby-top'>
+        <button class = 'lobby-top-child' v-if="GameRole == 'host'" @click='StartGame'>Start Game</button>
+        <div class = 'lobby-top-child' v-if="GameRole == 'host'" class = "generic-div">
+          <label>Private:</label>
+          <input v-model="IsPrivate" @change = "SetPrivateServer" type="checkbox">
+        </div>
+        
+        <p class = 'lobby-top-child gamecode':code='GamecodeDisplay'></p>
+        <select class = 'lobby-top-child' name="Character" @change="SetCharacter" v-model="Character">
           <option value="Rat">Rat</option>
           <option value="Banana">Banana</option>
           <option value="Potato">Potato(needs fix)</option>
           <option value="stove">Stove(because why not)</option>
+          <option value="Strawberry">strawberry</option>
+          <option value="watermelon">watermelon</option>
           <!-- <option value="squareWatermelon">Watermelon</option> -->
         </select>
       </div>
-      <li v-for="player in PlayerList">
-        <p>{{player.name + " is " + player.model}}</p>
-      </li>
+      <div class = 'player-list'>
+        <li v-for="player in PlayerList">
+          <p v-if="GameRole == 'host'" @click="KickPlayer(player.id)" class = 'host-delete-p'>{{player.name + " is " + player.model}}</p>
+          <p v-else>{{player.name + " is " + player.model}}</p>
+        </li>
+      </div>
     </div>
     <div v-if="Page == 'game'"></div>
   </div>

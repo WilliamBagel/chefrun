@@ -1,7 +1,7 @@
 var TestGame = {
   flags: {
-    debug: false
-  },
+    debug: false 
+  },  
   settings: {
     yLevel: -1
   },
@@ -17,6 +17,7 @@ var TestGame = {
       Rat: "Rat.glb",
       board: "BambooCuttingBoard.glb",
       sink: "Sink.glb",
+      watermelon: "SquareWatermelon.glb",
       duo_triple: "CounterCabinet_duo-triple.glb",
       "solo_single-left": "CounterCabinet_solo-single-left.glb",
       "duo-sextuple": "CounterCabinet_duo-sextuple.glb",

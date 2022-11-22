@@ -1,21 +1,22 @@
 
-
 class ServerConnection {
   constructor(port) {
     // this.channel = AblyRealtime.channels.get(this.channelName)
     // this.userid = JSON.parse(window.sessionStorage.GameData).userid
     this.port = port;
     this.socket = io(port);
+    this.id = this.socket.id
     this.selfListening = false;
     this.members = {};
     this.dataQueue = [];
     this.preUpdate = {};
-    this.updateEvery = 50;
+    this.updateEvery = 4;
     this.connected = false;
     this.gameEvents = {};
 
     this.messageTypes = {
-      "server-info": (message)=>{
+
+      'server-info': (message)=>{
         this.callGameEvent("game-rooms-update",message.rooms)
       },
       'server': (message) => {
@@ -29,6 +30,8 @@ class ServerConnection {
             this.gameStatus = "ingame";
             this.callGameEvent("begin");
             break;
+          case "game-end":
+            this.callGameEvent("end")
         }
         //recive messages about when game is starting
         //?somewhere else send game events like if they touched end point?
@@ -39,10 +42,17 @@ class ServerConnection {
         // const character = this.gameLoader.loadModel(data.data, true);
         ({ id, data } = data);
         this.members[id] = {
+          id,
           name: data.name,
           model: data.model
         };
         // this.callGameEvent("player-data-update",data.name,data.model);
+      },
+      'player-left': (data) => {
+        if(this.members[data.id]){
+          this.callGameEvent("player-left",this.members[data.id],data.id)
+          if(this.members[data.id])delete this.members[data.id]
+        }
       },
       'player-set-data': (data) => {
         let id;
@@ -58,7 +68,7 @@ class ServerConnection {
         for (let i = 0; i < updates.length; i++) {
           const type = updates[i].type;
           const data = updates[i].data;
-          if (type == 'transformation' && this.gameStatus == "ingame") {
+          if (type == 'transformation' && this.gameStatus == "ingame"&& this.members[id]) {
             let char = this.members[id];
             char.body.position.set(parseFloat(data[1][0]), parseFloat(data[1][1]), parseFloat(data[1][2]));
             let parsedQuat = [];
@@ -84,6 +94,7 @@ class ServerConnection {
               const member = data.members[i];
               console.log(member);
               this.members[member.id] = {
+                id: member.id,
                 model: member.data.model,
                 name: member.data.name
               };
@@ -94,6 +105,10 @@ class ServerConnection {
             console.log(data);
           }
         }
+      },
+      'disconnect': (...args)=>{
+        console.log(args)
+        this.callGameEvent('disconnect')
       }
     };
 
@@ -106,23 +121,25 @@ class ServerConnection {
   connect() {
     if (this.listening) return;
 
-    console.log(new Date().toUTCString());
     this.connected = true;
-    const self = this;//in callbacks use SELF instead of THIS
-    this.socket.on('connection', (socket) => {
-      console.log('connected to ws');
+    this.socket.on('connect', (socket) => {
       this.connected = true;
       //not fired bc this is registered after connection
+      // lol, no im just stupid and but connection not connect ,_,
     });
     for (let type in this.messageTypes) {
       this.socket.on(type, message => {
         this.messageTypes[type](message);
       });
     }
-    this.intervalId = setInterval(() => {// call on game start?
-      this.update();
-    }, this.updateEvery);
-    this.listening = true;
+    //this goes in play.js
+    // this.addGameEventListenser('start',()=>{
+    //   this.intervalId = setInterval(() => {// call on game start? yea
+    //     this.update();
+    //   }, this.updateEvery);
+    // })
+    this.listening = true;//listening to what
+    // ur bu...
   }
   disconnect() {
     clearInterval(this.intervalId);

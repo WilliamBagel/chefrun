@@ -6,6 +6,8 @@ import { ref } from 'vue';
 
 const portEncrypt = new PortEncrypt();
 var MyConnection;
+var MyData = {};
+window.MyData = MyData;
 var gameLoad;
 
 function init(character) {
@@ -38,81 +40,128 @@ function init(character) {
 const PlayerList = ref({});
 const ServerPort = ref("");
 const GameCode = ref("");
-const PlayerName = ref("")
+const PlayerName = ref("");
 const Character = ref("Rat");
 const GamecodeDisplay = ref("you have no code x_x");
-const GameRole = ref(undefined)
-const Page = ref("connect-choice")
-const ConnectType = ref(undefined)
-const GameRooms = ref([])
-const Warn = ref("")
+const GameRole = ref(undefined);
+const Page = ref("connect-choice");
+const ConnectType = ref(undefined);
+const GameRooms = ref([]);
+const Warn = ref("");
+const Confirm = ref("");
+const IsPrivate = ref(true);
 
 
 const SetServerPort = ref(() => {
-  if(MyConnection)return
+  if (MyConnection) return;
   let port;
   if (ConnectType.value == "global") {
     port = "https://chefrun.azurewebsites.net";
   } else if (ConnectType.value == "local") {
-    port = portEncrypt.decrypt(ServerPort.value) + ":3000";
+    port = "http://" + portEncrypt.decrypt(ServerPort.value) + ":3000";
   } else {
-    return
+    return;
   }
-  console.log(port)
   MyConnection = new ServerConnection(port);
-  MyConnection.addGameEventListenser("game-rooms-update",(rooms)=>{
-    GameRooms.value = rooms
-  })
+
+  MyConnection.addGameEventListenser("game-rooms-update", (rooms) => {
+    GameRooms.value = rooms;
+  });
   MyConnection.addGameEventListenser("start", () => {
-    Page.value = "game"
+    Page.value = "game";
     init(Character.value);
+    MyConnection.intervalId = setInterval(() => {// call on game start? yea
+      MyConnection.update();
+    }, 1000 / MyConnection.updateEvery);
   });
   window.MyConnection = MyConnection;
 });
 const SetCharacter = ref(() => {
-  if (MyConnection && MyConnection.gameStatus == "pregame") MyConnection.send('set-player-data', { model: Character.value });
+  if (MyConnection && MyConnection.gameStatus == "pregame") {
+    MyConnection.send('set-player-data', { model: Character.value });
+    MyData.model = Character.value;
+    updatePlayerList();
+  }
 });
-function connectPlayerData(){
-  if(MyConnection){
+const SetPrivateServer = ref(() => {
+  if (MyConnection && MyConnection.gameStatus == "pregame" && MyConnection.server == true) MyConnection.send('set-game-data', { permission: IsPrivate.value ? 'private' : 'public' });
+});
+function updatePlayerList() {
+  let { name, model, id } = MyData;
+  let list = [{ name, model, id }];
+  for (let i in MyConnection.members) {
+    ({ name, model, id } = MyConnection.members[i]);
+    list.push({ name, model, id });
+  }
+  console.log(list);
+  PlayerList.value = list;
+};
+function connectGameEvents() {
+  if (MyConnection) {
+    MyData.id = MyConnection.id;
     // PlayerList.value = MyConnection.members
-    const update = ()=>{
-      let list = []
-      let name,model;
-      for( let i in MyConnection.members){
-        ({name,model} = MyConnection.members[i])
-        list.push({name,model})
+    const update = updatePlayerList;
+    update();
+    MyConnection.addGameEventListenser('player-data-update', update);
+    MyConnection.addGameEventListenser('player-left', (player, id) => {
+      if (player.mesh && player.body) {
+        gameLoad.scene.remove(player.mesh);
+        gameLoad.CannonWorld.removeBody(player.body);
       }
-      PlayerList.value = list
-    }
-    update()
-    MyConnection.addGameEventListenser('player-data-update',update)
+      delete MyConnection.members[id];
+      update();
+    });
+    MyConnection.addGameEventListenser('disconnect', () => {
+      Page.value = 'connection';
+      PlayerList.value = [];
+      GameRooms.value = [];
+      update();
+      MyConnection = undefined;
+      SetServerPort.value()
+    });
   }
 }
-let lastWarn = false
-function checkName(){
-  if(PlayerName.value == ''){
-    Warn.value = "Please enter a name"
-    let time = Date.now()
-    lastWarn = time
-    setTimeout((time)=>{
-      if(lastWarn == time){
-        Warn.value = ""
-      }
-    },2000,time)
-    return false
+function checkName() {
+  if (PlayerName.value == '') {
+    warn("Please enter a name");
+    return false;
   }
-  return true
+  return true;
+}
+let lastWarn = false;
+function warn(value) {
+  Warn.value = value;
+  let time = Date.now();
+  lastWarn = time;
+  setTimeout((time) => {
+    if (lastWarn == time) {
+      Warn.value = "";
+    }
+  }, 2000, time);
+}
+let lastConfirm;
+function confirm(value) {
+  Confirm.value = value;
+  let time = Date.now();
+  lastConfirm = time;
+  setTimeout((time) => {
+    if (lastConfirm == time) {
+      Confirm.value = "";
+    }
+  }, 2000, time);
 }
 const HostRoom = ref(() => {
   if (MyConnection && checkName()) {
     MyConnection.hostServer();
     MyConnection.addGameEventListenser("room-hosted", (code) => {
-      console.log(code)
-      GamecodeDisplay.value = "server code ^_^: " + code;
-      GameRole.value = "host"
-      Page.value = "lobby"
-      connectPlayerData()
-      MyConnection.send('set-player-data', { name:PlayerName.value, model: Character.value });
+      MyConnection.send('set-game-data', { permission: IsPrivate.value ? 'private' : 'public' });
+      GamecodeDisplay.value = /*"server code ^_^: " + */code;
+      GameRole.value = "host";
+      Page.value = "lobby";
+      MyData.name = PlayerName.value;
+      MyData.model = Character.value;
+      connectGameEvents();
+      MyConnection.send('set-player-data', { name: PlayerName.value, model: Character.value });
     });
   }
 });
@@ -120,10 +169,12 @@ const JoinRoom = ref((code) => {
   if (MyConnection && checkName()) {
     MyConnection.joinServer(code);
     MyConnection.addGameEventListenser("room-joined", () => {
-      Page.value = "lobby"
-      GamecodeDisplay.value = "yayy, you connected to server ^-^";
-      GameRole.value = "player"
-      connectPlayerData()
+      Page.value = "lobby";
+      GamecodeDisplay.value = code;//"yayy, you connected to server ^-^";
+      GameRole.value = "player";
+      MyData.name = PlayerName.value;
+      MyData.model = Character.value;
+      connectGameEvents();
       MyConnection.send('set-player-data', { name: PlayerName.value, model: Character.value });
     });
   }
@@ -131,6 +182,11 @@ const JoinRoom = ref((code) => {
 const StartGame = ref(() => {
   if (MyConnection && MyConnection.server == true) {
     MyConnection.send("host-message", "game-start");
+  }
+});
+const KickPlayer = ref((id) => {
+  if (MyConnection && MyConnection.server == true && MyConnection.members[id] != undefined) {
+    MyConnection.send("host-moderation", { type: "kick", id });
   }
 });
 
@@ -150,5 +206,9 @@ export {
   ConnectType,
   PlayerName,
   GameRooms,
-  Warn
+  Warn,
+  Confirm,
+  IsPrivate,
+  SetPrivateServer,
+  KickPlayer
 };
