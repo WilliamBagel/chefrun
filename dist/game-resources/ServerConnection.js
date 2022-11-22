@@ -5,7 +5,6 @@ class ServerConnection {
     // this.userid = JSON.parse(window.sessionStorage.GameData).userid
     this.port = port;
     this.socket = io(port);
-    this.id = this.socket.id
     this.selfListening = false;
     this.members = {};
     this.dataQueue = [];
@@ -15,7 +14,6 @@ class ServerConnection {
     this.gameEvents = {};
 
     this.messageTypes = {
-
       'server-info': (message)=>{
         this.callGameEvent("game-rooms-update",message.rooms)
       },
@@ -107,7 +105,7 @@ class ServerConnection {
         }
       },
       'disconnect': (...args)=>{
-        console.log(args)
+        this.disconnect()
         this.callGameEvent('disconnect')
       }
     };
@@ -123,6 +121,7 @@ class ServerConnection {
 
     this.connected = true;
     this.socket.on('connect', (socket) => {
+      this.id = this.socket.id
       this.connected = true;
       //not fired bc this is registered after connection
       // lol, no im just stupid and but connection not connect ,_,
@@ -142,9 +141,9 @@ class ServerConnection {
     // ur bu...
   }
   disconnect() {
-    clearInterval(this.intervalId);
     if (this.listening) {
-
+      clearInterval(this.intervalId);
+      this.listening = false
       // for(let i in this.members){
       //     const member = this.members[i]
       //     Game.scene.remove(member)
@@ -190,7 +189,6 @@ class ServerConnection {
     delete arguments[0]
     let args = Array.from(arguments)
     args.shift()
-    console.log(args)
     if(this.gameEvents[event])this.gameEvents[event](...args)
   }
   hostServer() {

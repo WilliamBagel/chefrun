@@ -19,53 +19,57 @@
   <script src="https://cdn.socket.io/socket.io-3.0.5.min.js"></script>
   <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
   <!-- <script src=".\dist\play.vue"></script> -->
-  <script type = "module">
-    import { createApp, ref } from 'vue'
-    import * as file from './dist/play.js'
+  <script type="module">
+    import { createApp, ref } from 'vue';
+    import * as file from './dist/play.js';
     createApp({
       setup() {
-        document.getElementById("app").hidden = false
-        return file
+        document.getElementById("app").hidden = false;
+        return file;
       }
     }).mount('#app')
   </script>
-  <div id = 'app' hidden = true>
-    <div id = "connect-choice" v-if="Page == 'connect-choice'">
+  <div id='app' hidden=true>
+    <div id="connect-choice" v-if="Page == 'connect-choice'">
       <header>Choose Server</header>
       <button @click="ConnectType = 'global',SetServerPort(), Page='connection'">global</button>
       <button @click="ConnectType = 'local', Page='connection'">local</button>
     </div>
-    <div v-if="Page == 'connection'" id = 'connection-page'>
-      <div>
+    <div v-if="Page == 'connection'" id='connection-page'>
+      <div class="room-list">
         <header>Game Rooms:</header>
         <li v-for="room in GameRooms">
           <button @click=JoinRoom(room.code)>{{"Code: " +room.code + ", player#: " + room.players}}</button>
         </li>
       </div>
-      <div>
+      <div class="connection-div">
         <input v-model="PlayerName" placeholder="name" minlength=1 maxlength="10" type='string'>
-      <div v-if="ConnectType == 'local'">
-        <input type='text' v-model="ServerPort" placeholder="servercode" minlength=4 maxlength=50 autocomplete=false>
-        <button @click ="SetServerPort">Connect to server</button>
-      </div>
-      <input v-if="GameRole != 'host'" placeholder="gamecode" v-model="GameCode" type='number' minlength=6 maxlength=6 autocomplete=false>
-      <div class = "flat-bar"></div>
-      <button @click="JoinRoom(GameCode)">Join Game</button>
-      <button @click="HostRoom()">Host Game</button>
-      <p v-show="Warn != ''" class="warn">{{Warn}}</p>
-      <p v-show="Confirm != ''" class="confirm">{{Confirm}}</p>
-      </div>
-    </div>
-    <div v-if="Page == 'lobby'" class = 'lobby-page'>
-      <div class = 'lobby-top'>
-        <button class = 'lobby-top-child' v-if="GameRole == 'host'" @click='StartGame'>Start Game</button>
-        <div class = 'lobby-top-child' v-if="GameRole == 'host'" class = "generic-div">
-          <label>Private:</label>
-          <input v-model="IsPrivate" @change = "SetPrivateServer" type="checkbox">
+        <div v-if="ConnectType == 'local'">
+          <input type='text' v-model="ServerPort" placeholder="servercode" minlength=4 maxlength=50 autocomplete=false>
+          <button @click="SetServerPort">Connect to server</button>
         </div>
-        
-        <p class = 'lobby-top-child gamecode':code='GamecodeDisplay'></p>
-        <select class = 'lobby-top-child' name="Character" @change="SetCharacter" v-model="Character">
+        <input v-if="GameRole != 'host'" placeholder="gamecode" v-model="GameCode" type='number' minlength=6 maxlength=6
+          autocomplete=false>
+        <div class="flat-bar"></div>
+        <button @click="JoinRoom(GameCode)">Join Game</button>
+        <button @click="HostRoom()">Host Game</button>
+        <div class="tmp-response-container">
+          <span v-show="Warn != ''" class="tmp-response warn">{{Warn}}</span>
+          <span v-show="Confirm != ''" class="tmp-response confirm">{{Confirm}}</span>
+        </div>
+      </div>
+      <button class='back-button' @click="BackPage" v-if="Page == 'connection' || Page == 'lobby'">Back</button>
+    </div>
+    <div v-if="Page == 'lobby'" class='lobby-page'>
+      <div class='lobby-top'>
+        <button class='lobby-top-child' v-if="GameRole == 'host'" @click='StartGame'>Start Game</button>
+        <div class='private-box lobby-top-child' v-if="GameRole == 'host'" class="generic-div">
+          <label>Private:</label>
+          <input v-model="IsPrivate" @change="SetPrivateServer" type="checkbox">
+        </div>
+
+        <div class='gamecode-container lobby-top-child'><span class='gamecode' :code='GamecodeDisplay'></span></div>
+        <select class='lobby-top-child' name="Character" @change="SetCharacter" v-model="Character">
           <option value="Rat">Rat</option>
           <option value="Banana">Banana</option>
           <option value="Potato">Potato(needs fix)</option>
@@ -75,12 +79,14 @@
           <!-- <option value="squareWatermelon">Watermelon</option> -->
         </select>
       </div>
-      <div class = 'player-list'>
+      <div class='player-list'>
         <li v-for="player in PlayerList">
-          <p v-if="GameRole == 'host'" @click="KickPlayer(player.id)" class = 'host-delete-p'>{{player.name + " is " + player.model}}</p>
-          <p v-else>{{player.name + " is " + player.model}}</p>
+          <span v-if="GameRole == 'host'" @click="KickPlayer(player.id)" class='host-delete-p'>{{player.name + " is " +
+            player.model}}</span>
+          <span v-else>{{player.name + " is " + player.model}}</span>
         </li>
       </div>
+      <button class='back-button' @click="BackPage" v-if="Page == 'connection' || Page == 'lobby'">Back</button>
     </div>
     <div v-if="Page == 'game'"></div>
   </div>

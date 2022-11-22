@@ -93,7 +93,6 @@ function updatePlayerList() {
     ({ name, model, id } = MyConnection.members[i]);
     list.push({ name, model, id });
   }
-  console.log(list);
   PlayerList.value = list;
 };
 function connectGameEvents() {
@@ -116,8 +115,10 @@ function connectGameEvents() {
       PlayerList.value = [];
       GameRooms.value = [];
       update();
+      warn("disconnected")
       MyConnection = undefined;
       SetServerPort.value()
+      GameRole.value = ""
     });
   }
 }
@@ -185,10 +186,22 @@ const StartGame = ref(() => {
   }
 });
 const KickPlayer = ref((id) => {
-  if (MyConnection && MyConnection.server == true && MyConnection.members[id] != undefined) {
+  if (MyConnection && MyConnection.server == true && (MyConnection.members[id] != undefined || id == MyData.id)) {
     MyConnection.send("host-moderation", { type: "kick", id });
+    if(id == MyData.id)confirm("you kicked yourself")
   }
 });
+const BackPage = ref(()=>{
+  if(Page.value == "connection"){
+    Page.value = "connect-choice"
+  }else if(Page.value == "lobby"){
+    Page.value = "connection"
+    if(MyConnection){
+      MyConnection.socket.disconnect()
+      MyConnection.messageTypes['disconnect']()
+    }
+  }
+})
 
 export {
   PlayerList,
@@ -210,5 +223,6 @@ export {
   Confirm,
   IsPrivate,
   SetPrivateServer,
-  KickPlayer
+  KickPlayer,
+  BackPage
 };
