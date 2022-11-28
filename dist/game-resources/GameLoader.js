@@ -267,11 +267,11 @@ class GameLoader {
       }
       obj.position = new THREE.Vector3(obj.position[0], obj.position[1], -obj.position[2]);
       obj.size = new THREE.Vector3(obj.size[0], obj.size[1], obj.size[2]);
-      switch (obj.type) {
-        case 'sync-Import': {
+      switch (obj.type.toLowerCase()) {
+        case 'sync-import': {
           this.loadModel(obj, true);
         } break;
-        case 'sync-Default':
+        case 'sync-default':
           if (obj.shape == 'box') {
             const geo = new THREE.BoxGeometry();
             const mat = this.materials.three[obj.shader];
@@ -313,7 +313,7 @@ class GameLoader {
               console.warn(obj.shape + " is not a valid object shape");
             }
             break; }
-          case 'sync-Poly': {
+          case 'sync-poly': {
           const geo = new THREE.BufferGeometry();
           // let verts = new Float32Array(obj.verts)
           // let indices = obj.indices
@@ -374,7 +374,7 @@ class GameLoader {
 
           // console.log(body,mesh)
         } break;
-        case "checkPoint": {
+        case "checkpoint": {
           const geo = new THREE.BoxGeometry();
           const mat = this.materials.three[obj.shader];
           const mesh = new THREE.Mesh(geo, mat);
@@ -538,7 +538,7 @@ class GameLoader {
     // this.world.renderer.physicallyCorrectLights = true
     let light
     light = new THREE.AmbientLight(0x404040);
-    light.intensity = 0.1;
+    light.intensity = 0.4;
     this.scene.add(light);
     light = new THREE.PointLight( 0xffffff, 1 );
     // light.bais = 0.1
@@ -874,7 +874,10 @@ function rigToConvexHull(mesh, correctPos, simplifyAmount = 0.875) {
 function getCompoundHull(hull,linkto,scale = new THREE.Vector3(1,1,1)) {
   const data = hull.userData;
   const body = new CANNON.Body();
+  let meshParent;
   let dims, type, shape;
+
+  if(linkto)meshParent = new THREE.Object3D()
 
   for (let name in data) {
     type = (name.search('sphere') > -1 && 'sphere') || (name.search('cube') > -1 && 'cube');
@@ -896,16 +899,21 @@ function getCompoundHull(hull,linkto,scale = new THREE.Vector3(1,1,1)) {
     if(linkto){
       const geo = type == 'sphere'? new THREE.SphereGeometry(dims[6]) : new THREE.BoxGeometry(dims[6]*2,dims[7]*2,dims[8]*2)
       const mesh = new THREE.Mesh(geo,Game.materials.three.default)
+      mesh.quaternion.copy(new THREE.Quaternion().setFromEuler(new THREE.Euler(dims[3],dims[4],dims[5],'XYZ')));
       // mesh.applyMatrix4(new THREE.Matrix4().compose(new THREE.Vector3(dims[0],dims[1],dims[2]),new THREE.Quaternion().setFromEuler(new THREE.Euler(dims[3],dims[4],dims[5])),new THREE.Vector3(1,1,1)));
-      const pos = mesh.geometry.attributes.position
-      for(let i = 0; i < pos.count;i++){
-        pos.array[i*3] += dims[0]
-        pos.array[i*3+1] += dims[1]
-        pos.array[i*3+2] += dims[2]
-      }
-      Game.scene.add(mesh)
-      new SyncedMesh(mesh,body)
+      // const pos = mesh.geometry.attributes.position
+      // for(let i = 0; i < pos.count;i++){
+      //   pos.array[i*3] += dims[0]
+      //   pos.array[i*3+1] += dims[1]
+      //   pos.array[i*3+2] += dims[2]
+      // }
+      mesh.position.set(dims[0],dims[1],dims[2])
+      meshParent.add(mesh)
     }
+  }
+  if(linkto){
+    Game.scene.add(meshParent)
+    new SyncedMesh(meshParent,body)
   }
   return body
 }

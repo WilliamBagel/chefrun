@@ -161,8 +161,8 @@ class GameMechanics {
         character.body.quaternion.set(0, 0, 0, 1);
       }
       if (this.ThirdPerson) {
-        const disAbove = 1;
-        const disOut = 2;
+        const disAbove = 0.5;
+        const disOut = 1;
 
         const upVec = new THREE.Vector3(0, 1, 0);
         const lookVec = new THREE.Vector3().setFromSphericalCoords(1, Math.PI / 2, theta);

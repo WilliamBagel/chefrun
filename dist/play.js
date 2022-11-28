@@ -1,5 +1,5 @@
 import { ServerConnection } from './game-resources/ServerConnection.js';
-import { TestGame } from './games/KitchenTest.js';
+import { TestGame } from './games/KitchenMap1.js';
 import { World } from "./world.js";
 import { PortEncrypt } from './game-resources/PortEncrypt.js';
 import { ref } from 'vue';
