@@ -161,6 +161,7 @@ class GameMechanics {
         character.body.quaternion.set(0, 0, 0, 1);
       }
       if (this.ThirdPerson) {
+        this.cameraOffset;
         const disAbove = 0.5;
         const disOut = 1;
 

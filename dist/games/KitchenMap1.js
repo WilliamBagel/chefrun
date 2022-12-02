@@ -44,8 +44,8 @@ var TestGame = {
     texture: 'character',
     model: 'Rat',
     mass: 50,
-    size: [0.3, 0.3, 0.3],
-    walkSpeed: 3,
+    size: [0.2, 0.2, 0.2],
+    walkSpeed: 2,
     sprintSpeed: 4,
     jumpPower: 3.5
   },
@@ -432,31 +432,6 @@ var TestGame = {
         "type": "sync-import"
       },
       {
-        "mass": 0,
-        "model": "sink",
-        "pointNumber": 0,
-        "position": [
-          0.0,
-          1.5,
-          0.10000000149011612
-        ],
-        "rotation": [
-          -0.0,
-          -0.0,
-          0.0
-        ],
-        "shader": "brown",
-        "shape": "box",
-        "size": [
-          6.0,
-          3.0,
-          6.0
-        ],
-        "syncDirection": 0,
-        "texture": "default",
-        "type": "sync-Default"
-      },
-      {
         "pointNumber": 0,
         "position": [
           -8.985669136047363,
@@ -505,7 +480,7 @@ var TestGame = {
         "model": "board",
         "position": [
           -8.899999618530273,
-          3.1164803504943848,
+          3.154726505279541,
           0.800000011920929
         ],
         "rotation": [
@@ -671,13 +646,13 @@ var TestGame = {
         "model": "top-corner-single-left",
         "pointNumber": 0,
         "position": [
-          -8.6,
+          -8.600000381469727,
           6.0,
-          8.6
+          8.600000381469727
         ],
         "rotation": [
           -0.0,
-          0,
+          -90.00000250447816,
           0.0
         ],
         "shader": "default",
@@ -711,6 +686,75 @@ var TestGame = {
           1.2000000476837158,
           2.0,
           2.0
+        ],
+        "syncDirection": 0,
+        "texture": "default",
+        "type": "sync-Import"
+      },
+      {
+        "mass": 0,
+        "model": "duo_triple",
+        "position": [
+          1.430511474609375e-06,
+          0.0,
+          -2.0
+        ],
+        "rotation": [
+          -0.0,
+          -90.00000250447816,
+          0.0
+        ],
+        "shader": "default",
+        "size": [
+          2.0,
+          2.0,
+          2.2208104133605957
+        ],
+        "syncDirection": 0,
+        "texture": "default",
+        "type": "sync-import"
+      },
+      {
+        "mass": 0,
+        "model": "duo_triple",
+        "position": [
+          -1.0,
+          0.0,
+          1.0
+        ],
+        "rotation": [
+          -0.0,
+          -179.99997768819966,
+          0.0
+        ],
+        "shader": "default",
+        "size": [
+          2.0,
+          2.0,
+          2.0
+        ],
+        "syncDirection": 0,
+        "texture": "default",
+        "type": "sync-import"
+      },
+      {
+        "mass": 0,
+        "model": "duo-sextuple",
+        "position": [
+          0.9999999403953552,
+          -0.0009999275207519531,
+          0.9999994039535522
+        ],
+        "rotation": [
+          -0.0,
+          -0.0,
+          0.0
+        ],
+        "shader": "default",
+        "size": [
+          2.0,
+          2.0,
+          2.2857141494750977
         ],
         "syncDirection": 0,
         "texture": "default",

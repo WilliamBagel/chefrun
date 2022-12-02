@@ -8,8 +8,8 @@
 
 
 - more assets                     - 
-- fix sink texture                - add game lobbies, mostly ui, delay run until started by host
-- fix duo_triple texture          - add character picking
+- fix sink hull               
+- fix duo_triple texture          
 - add roughness maps?             - add finish line
 - make assets look pretty         - have host sync moving obstacles
 
@@ -28,7 +28,8 @@
    /_/     \_\
 
 
-  
+- add character picking
+- add game lobbies, mostly ui, delay run until started by host
 - Export all assets with new order of rotation in compundhull.py, 'XZY'
 - 'ZYX' rotation works for euler angles from z+ up to y+ up somehow
 - fix plugin to pop attributes on type change instead of when redrawn

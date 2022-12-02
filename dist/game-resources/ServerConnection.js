@@ -9,7 +9,7 @@ class ServerConnection {
     this.members = {};
     this.dataQueue = [];
     this.preUpdate = {};
-    this.updateEvery = 4;
+    this.updateEvery = 10;
     this.connected = false;
     this.gameEvents = {};
 
