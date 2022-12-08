@@ -74,7 +74,6 @@ class GameMechanics {
     const CanFloorCast = new CANNON.Ray();
     const raycastResult = new CANNON.RaycastResult();
     const wallCaster = new THREE.Raycaster();
-    console.log();
     loader.onrender = (deltatime) => {
       camera.position.copy(character.mesh.position);
 
@@ -202,7 +201,6 @@ class GameMechanics {
           mesh.material.transparent = true;
           mesh.material.opacity = 0;
         };
-        console.log(this.lastOffsetPercent)
 
         camera.position.copy(camPos);
 
