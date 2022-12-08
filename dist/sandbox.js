@@ -1,14 +1,14 @@
-let LOADERWORKS = false;
-const myDirectory = 'https://williambagel.github.io/ThreeJsStuff/';
-import * as THREE from "https://unpkg.com/three@0.141.0/build/three.module.js";//"https://threejs.org/build/three.module.js"; 
-import * as CANNON from 'https://pmndrs.github.io/cannon-es/dist/cannon-es.js';
-import * as SkeletonUtils from "https://threejs.org/examples/jsm/utils/SkeletonUtils.js";
-import { GLTFLoader } from 'https://threejs.org/examples/jsm/loaders/GLTFLoader.js';
-import { ConvexGeometry } from 'https://unpkg.com/three@0.122.0/examples/jsm/geometries/ConvexGeometry.js';
-import { SimplifyModifier } from 'https://threejs.org/examples/jsm/modifiers/SimplifyModifier.js';
+// let LOADERWORKS = false;
+// const myDirectory = 'https://williambagel.github.io/ThreeJsStuff/';
+// import * as THREE from "https://unpkg.com/three@0.141.0/build/three.module.js";//"https://threejs.org/build/three.module.js"; 
+// import * as CANNON from 'https://pmndrs.github.io/cannon-es/dist/cannon-es.js';
+// import * as SkeletonUtils from "https://threejs.org/examples/jsm/utils/SkeletonUtils.js";
+// import { GLTFLoader } from 'https://threejs.org/examples/jsm/loaders/GLTFLoader.js';
+// import { ConvexGeometry } from 'https://unpkg.com/three@0.122.0/examples/jsm/geometries/ConvexGeometry.js';
+// import { SimplifyModifier } from 'https://threejs.org/examples/jsm/modifiers/SimplifyModifier.js';
 
 import { ServerConnection } from './game-resources/ServerConnection.js';
-import { TestGame } from './games/KitchenTest.js';
+import { TestGame } from './games/KitchenMap1.js';
 import { World } from "./world.js";
 
 var MyConnection;
@@ -18,6 +18,7 @@ function init() {
   const world = new World();
   gameLoad = world.loadGame(TestGame);
   world.initGame()
+  window.game = gameLoad
   
 }
 

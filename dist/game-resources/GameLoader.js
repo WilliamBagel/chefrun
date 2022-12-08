@@ -410,20 +410,32 @@ class GameLoader {
           });
           this.CannonWorld.addBody(border);
           break;
+        case 'light':
+          let type = light.type
+          if(type == 'DirectionalLight'){
+
+          }
+          break;
         case 'obstacle':
+          let obstacle
           switch (obj.subType) {
             case 'spinner':
               //position, size, mass, type, motor, speed
               new SpinnerObstacle(obj.position, obj.size, obj.mass, obj.subsubType, obj.motorEnabled, obj.speed);
               break;
             case 'moving':
-              new MovingObstacle(obj.subsubType, obj.position, obj.mass, obj.options);
+              obstacle = new MovingObstacle(obj.subsubType, obj.position,obj.size, obj.mass, obj.options);
+              this.world.addSystem(obstacle);
               break;
             case 'obstacle':
               new Obstacle(obj.subsubType, obj.position, obj.size, obj.mass.obj.geometry, obj.body);
               break;
             default:
               console.warn(obj.type + " is not a valid object subtype");
+          }
+          if(obstacle){
+            const mat = Game.materials.three[obj.shader];
+            obstacle.threeMesh.material = mat
           }
           break;
         default: {
@@ -509,7 +521,6 @@ class GameLoader {
     return { mesh };
   }
   initCore() {
-    this.UniversalClock = new THREE.Clock();
     this.CannonWorld = new CANNON.World();
     this.CannonWorld.gravity.set(0, -20, 0);
     this.camera = this.world.camera;
@@ -552,8 +563,8 @@ class GameLoader {
     light.shadow.camera.left    =  -20;
     light.shadow.camera.top     =   20;
     light.shadow.camera.bottom  =  -20;
-    light.shadow.mapSize.width  = 1080;
-    light.shadow.mapSize.height = 1080;
+    light.shadow.mapSize.width  = 1024;
+    light.shadow.mapSize.height = 1024;
     this.scene.add(light)
     // light = new THREE.PointLight( 0xffffff, 1 );
     // light.shadow.camera.near    =   10;
@@ -710,6 +721,9 @@ class MovingObstacle extends Obstacle {
     super(type, position, size, mass);
     // this.cannonBody.material = CollisionMaterials.ground;
     this.cannonBody.type = CANNON.Body.STATIC;
+    if(options && options.offset && options.offset.constructor == Array && options.offset.length ==3){
+      options.offset = new CANNON.Vec3().set(...options.offset)
+    }
     if (options) {
       Object.setPrototypeOf(options, {
         type: 'linear',
@@ -723,43 +737,45 @@ class MovingObstacle extends Obstacle {
       this.offset = options.offset;
       this.speed = options.speed;
       this.totalTime = options.totaltime;
-      this.startTime = UniversalClock.getElapsedTime();
-      renderFoos.push((dt) => {
-        let dfraction = (UniversalClock.getElapsedTime() - this.startTime) % this.totalTime / this.totalTime;
-        // const deltaoffset = new CANNON.Vec3()
-        let offset;
-        let rads;
-        switch (this.type) {
-          case 'linear':
-            offset = new THREE.Vector3().copy(this.offset).multiply(dfraction);
-            this.position.copy(offset.add(this.centerPosition));
-            break;
-          case 'radial':
-            rads = dfraction * Math.PI * 2;
-            const x = Math.cos(rads);
-            const z = Math.sin(rads);
-            const newPos = new CANNON.Vec3(x, 0, z);
-            newPos.x *= this.offset.x;
-            newPos.y *= this.offset.y;
-            newPos.z *= this.offset.z;
-            this.cannonBody.position.copy(newPos.add(this.centerPosition));
-            break;
-          case 'rotational':
-            rads = dfraction * Math.PI * 2;
-            const angle = new CANNON.Vec3().set(rads * this.offset.x, rads * this.offset.y, rads * this.offset.z, 'XYZ');
-            this.cannonBody.quaternion.setFromEuler(angle.x, angle.y, angle.z);
-            break;
-          case 'absolute':
-            dfraction = Math.abs(dfraction - 0.5);
-            offset = new THREE.Vector3().copy(this.offset).multiplyScalar(dfraction);
-            this.cannonBody.position.copy(offset.add(this.centerPosition));
-            break;
-        }
-        this.cannonBody.velocity.set(0, 0, 0);
-      });
+      this.elapsedTime = 0
+      
     }
   }
-
+  step(dt){
+    this.elapsedTime += dt
+    let dfraction = (this.elapsedTime) % this.totalTime / this.totalTime;
+    dfraction = dfraction*2-(2*dfraction-1)*(2*Math.floor(dfraction*2))
+    // const deltaoffset = new CANNON.Vec3()
+    let offset;
+    let rads;
+    switch (this.type) {
+      case 'linear':
+        offset = new THREE.Vector3().copy(this.offset).multiplyScalar(dfraction);
+        this.cannonBody.position.copy(offset.add(this.centerPosition));
+        break;
+      case 'radial':
+        rads = dfraction * Math.PI * 2;
+        const x = Math.cos(rads);
+        const z = Math.sin(rads);
+        const newPos = new CANNON.Vec3(x, 0, z);
+        newPos.x *= this.offset.x;
+        newPos.y *= this.offset.y;
+        newPos.z *= this.offset.z;
+        this.cannonBody.position.copy(newPos.add(this.centerPosition));
+        break;
+      case 'rotational':
+        rads = dfraction * Math.PI * 2;
+        const angle = new CANNON.Vec3().set(rads * this.offset.x, rads * this.offset.y, rads * this.offset.z, 'XYZ');
+        this.cannonBody.quaternion.setFromEuler(angle.x, angle.y, angle.z);
+        break;
+      case 'absolute':
+        dfraction = Math.abs(dfraction - 0.5);
+        offset = new THREE.Vector3().copy(this.offset).multiplyScalar(dfraction);
+        this.cannonBody.position.copy(offset.add(this.centerPosition));
+        break;
+    }
+    this.cannonBody.velocity.set(0, 0, 0);
+  };
 }
 
 class SpinnerObstacle extends Obstacle {

@@ -42,7 +42,7 @@ var TestGame = {
   character: {
     // shader: 'bananaBake',
     texture: 'character',
-    model: 'Rat',
+    model: 'Potato',
     mass: 50,
     size: [0.2, 0.2, 0.2],
     walkSpeed: 2,
@@ -148,6 +148,13 @@ var TestGame = {
           color: 0xAAAA00,
           transparent: true,
           opacity: 0.4,
+          // side: 2
+        }
+      },
+      water: {
+        type: 'MeshPhongMaterial',
+        settings: {
+          color: 0x0000AA,
           // side: 2
         }
       },
@@ -615,6 +622,36 @@ var TestGame = {
         "syncDirection": 0,
         "texture": "default",
         "type": "sync-Import"
+      },
+      {
+        "mass": 0,
+        "position": [
+          -9.001099586486816,
+          1.8,
+          4.010618686676025
+        ],
+        "rotation": [
+          -0.0,
+          -0.0,
+          0.0
+        ],
+        "shader": "water",
+        "shape": "box",
+        "size": [
+          1.8,
+          1,
+          2.5
+        ],
+        "syncDirection": 0,
+        "texture": "default",
+        "type": "obstacle",
+        "subType": 'moving',
+        "subsubType": 'rect',
+        "options": {
+          offset:[0,0.8,0],
+          totaltime: 10,
+          interpolation: 'absolute'
+        }
       },
       {
         "mass": 0,

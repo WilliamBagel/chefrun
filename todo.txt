@@ -8,7 +8,6 @@
 
 
 - more assets                     - 
-- fix sink hull               
 - fix duo_triple texture          
 - add roughness maps?             - add finish line
 - make assets look pretty         - have host sync moving obstacles
@@ -34,6 +33,8 @@
 - 'ZYX' rotation works for euler angles from z+ up to y+ up somehow
 - fix plugin to pop attributes on type change instead of when redrawn
 - add rat animations, finish them
+- fix sink hull               
+
   __                ___
  |  |              /   \
  |  |______       / / \ \
