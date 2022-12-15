@@ -15,6 +15,7 @@ var TestGame = {
       Strawberry: ["Strawberry.glb", 0],
       stove: ["Stove.glb", 0],
       Rat: "Rat.glb",
+      SantaRat: "RatSanta.glb",
       board: "BambooCuttingBoard.glb",
       sink: "Sink.glb",
       watermelon: "SquareWatermelon.glb",
