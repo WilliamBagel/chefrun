@@ -116,8 +116,7 @@ class GameLoader {
     
     character.mesh = mesh;
     character.body = body;
-
-    if(folder.model.search("Rat")){
+    if(folder.model.search("Rat") != -1){
       //INIT RAT BOTS!!!
       const ratMechs = new RatMechanics(this,this.scene,folder,this.character)
       this.world.addSystem(ratMechs)
