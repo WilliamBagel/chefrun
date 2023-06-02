@@ -1,10 +1,10 @@
-import * as THREE from "https://unpkg.com/three@0.141.0/build/three.module.js";
+import * as THREE from "three";
 import { GameLoader } from "./game-resources/GameLoader.js";
 import { GameMechanics } from "./game-resources/GameMechanics.js";
 
 class World {
   constructor() {
-    this.renderer = new THREE.WebGLRenderer;
+    this.renderer = new THREE.WebGLRenderer();
     this.renderer.setSize(window.innerWidth, window.innerHeight);
     (document.getElementById("app") || document.body).appendChild(this.renderer.domElement);
     this.universalClock = new THREE.Clock();
@@ -94,6 +94,7 @@ class World {
   _onrender(ms) {
     const secs = ms / 1000;
     for (let i = 0; i < this._systems.length; i++) {
+      if(this._systems[i]._killSystem)this._systems[i].step = false
       if(this._systems[i].step)this._systems[i].step(secs)
     }
     for (let i = 0; i < this._callOnRender.length; i++){

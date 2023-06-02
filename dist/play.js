@@ -3,6 +3,8 @@ import { TestGame } from './games/KitchenMap1.js';
 import { World } from "./world.js";
 import { PortEncrypt } from './game-resources/PortEncrypt.js';
 import { ref } from 'vue';
+import { RatMechanics } from './game-resources/RatMechanics.js';
+import { LerpController } from './game-resources/LerpController.js';
 
 const portEncrypt = new PortEncrypt();
 var MyConnection;
@@ -17,7 +19,16 @@ function init(character) {
   window.game = gameLoad;
   world.initGame();
   world.addGameLoadListener(() => {
+    gameLoad.character.body.isCharacter = true;
     const members = MyConnection.members;
+    const connectedObjects = gameLoad.getConnectedObjects();
+    connectedObjects[MyConnection.id] = gameLoad.character.body;
+    for (let i in connectedObjects){const elem = connectedObjects[i]; elem.lerpController = new LerpController(elem, 'b'); world.addSystem(elem.lerpController); };
+    MyConnection.setConnectedObjects(connectedObjects);
+    if (game.character.ratMechanics) {
+      const animatedObjects = [[MyConnection.id, gameLoad.character.ratMechanics]];
+      MyConnection.setAnimatedObjects(animatedObjects);
+    }
     for (let i in members) {
       let data = members[i];
       let folder = {};
@@ -27,12 +38,19 @@ function init(character) {
       folder.mass = gameLoad.jsonData.character.mass || 20;
       console.log(data, folder);
       let res = gameLoad.loadModel(folder, true);
-      data.mesh = res.mesh;
-      data.body = res.body;
+      if (data.model.search("Rat") != -1) {
+        const ratMechs = new RatMechanics(false, res);
+        world.addSystem(ratMechs);
+        MyConnection._animatedObjects.push([data.id, ratMechs]);
+      }
+      res.body.lerpController = new LerpController(res.body, 'b');
+      world.addSystem(res.body.lerpController);
+      MyConnection.setMemberModel(data.id, res);
     }
     MyConnection.send("set-player-status", "ready");
     MyConnection.addGameEventListenser('begin', () => {
-      MyConnection.setTransSending(true, gameLoad.character);
+      MyConnection.setTransSending(true);
+      MyConnection.setAnimSending(true);
     });
   });
 };
@@ -41,7 +59,7 @@ const PlayerList = ref({});
 const ServerPort = ref("");
 const GameCode = ref("");
 const PlayerName = ref("");
-const Character = ref("Rat");
+const Character = ref("Potato");
 const GamecodeDisplay = ref("you have no code x_x");
 const GameRole = ref(undefined);
 const Page = ref("connect-choice");
@@ -63,7 +81,10 @@ const SetServerPort = ref(() => {
     return;
   }
   MyConnection = new ServerConnection(port);
-
+  confirm("connecting...");
+  MyConnection.addGameEventListenser('connected-to-server', () => {
+    confirm("connected");
+  });
   MyConnection.addGameEventListenser("game-rooms-update", (rooms) => {
     GameRooms.value = rooms;
   });
@@ -102,6 +123,9 @@ function connectGameEvents() {
     const update = updatePlayerList;
     update();
     MyConnection.addGameEventListenser('player-data-update', update);
+    MyConnection.addGameEventListenser('this-data-update', (model) => {
+      Character.value = model;
+    });
     MyConnection.addGameEventListenser('player-left', (player, id) => {
       if (player.mesh && player.body) {
         gameLoad.scene.remove(player.mesh);
@@ -115,10 +139,10 @@ function connectGameEvents() {
       PlayerList.value = [];
       GameRooms.value = [];
       update();
-      warn("disconnected")
+      warn("disconnected");
       MyConnection = undefined;
-      SetServerPort.value()
-      GameRole.value = ""
+      SetServerPort.value();
+      GameRole.value = "";
     });
   }
 }
@@ -182,26 +206,31 @@ const JoinRoom = ref((code) => {
 });
 const StartGame = ref(() => {
   if (MyConnection && MyConnection.server == true) {
+    const rplayers = Object.keys(MyConnection.members);
+    rplayers.push(MyConnection.id);
+    const id = rplayers[Math.floor(Math.random() * rplayers.length)];
+    console.log(id);
+    MyConnection.send('host-set-player-data', { id, data: { model: "Rat" } });
     MyConnection.send("host-message", "game-start");
   }
 });
 const KickPlayer = ref((id) => {
   if (MyConnection && MyConnection.server == true && (MyConnection.members[id] != undefined || id == MyData.id)) {
     MyConnection.send("host-moderation", { type: "kick", id });
-    if(id == MyData.id)confirm("you kicked yourself")
+    if (id == MyData.id) confirm("you kicked yourself");
   }
 });
-const BackPage = ref(()=>{
-  if(Page.value == "connection"){
-    Page.value = "connect-choice"
-  }else if(Page.value == "lobby"){
-    Page.value = "connection"
-    if(MyConnection){
-      MyConnection.socket.disconnect()
-      MyConnection.messageTypes['disconnect']()
+const BackPage = ref(() => {
+  if (Page.value == "connection") {
+    Page.value = "connect-choice";
+  } else if (Page.value == "lobby") {
+    Page.value = "connection";
+    if (MyConnection) {
+      MyConnection.socket.disconnect();
+      MyConnection.messageTypes['disconnect']();
     }
   }
-})
+});
 
 export {
   PlayerList,

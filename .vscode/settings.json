@@ -2,5 +2,6 @@
     "liveServer.settings.port": 5501,
     "[javascript]": {
     },
-    "git.enabled": false
+    "git.enabled": false,
+    "C_Cpp.errorSquiggles": "enabled"
 }

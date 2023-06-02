@@ -1,5 +1,5 @@
 import * as THREE from "three";
-import * as CANNON from 'https://pmndrs.github.io/cannon-es/dist/cannon-es.js';
+import * as CANNON from 'cannon';
 
 class GameMechanics {
   constructor(world) {
@@ -31,9 +31,9 @@ class GameMechanics {
     light.shadow.camera.left = -10;
     light.shadow.camera.top = 10;
     light.shadow.camera.bottom = -10;
-    light.shadow.mapSize.width = 612;
-    light.shadow.mapSize.height = 612;
-    this.character.mesh.add(light);
+    light.shadow.mapSize.width = 64;
+    light.shadow.mapSize.height = 64;
+    // this.character.mesh.add(light);
 
     world._animate();
     this.ThirdPerson = true;
@@ -60,7 +60,7 @@ class GameMechanics {
     character.Speed = character.walkSpeed;
 
 
-    let lon = 180;
+    let lon = 0;
     let lat = 0;
     let theta = 0;
     let phi = 0;
@@ -74,19 +74,22 @@ class GameMechanics {
     const CanFloorCast = new CANNON.Ray();
     const raycastResult = new CANNON.RaycastResult();
     const wallCaster = new THREE.Raycaster();
+    const excludeCaster = new THREE.Raycaster();
+    // console.log(loader._excludeHullMeshes)
     loader.onrender = (deltatime) => {
       camera.position.copy(character.mesh.position);
 
+      targetPosition.copy(targetLook.add(camera.position));
       if (world.InputTable.mouse || world.mouseLocked) {
         lon -= (world.InputTable.mousedelta[0] * 0.4);
         lat -= (world.InputTable.mousedelta[1] * -0.4); //* actualLookSpeed * verticalLookRatio;
-        lat = Math.max(- 85, Math.min(85, lat));
+        lat = Math.max(- 8, Math.min(89, lat));
+        // lon = Math.max(0,lon)
+        // console.log(lat)
         phi = radians(90 - lat);
         theta = radians(lon);
 
         targetLook.setFromSphericalCoords(-1, phi, theta);
-        targetPosition.copy(targetLook.add(camera.position));
-
         camera.lookAt(targetPosition);
         world.InputTable.mousedelta[0] = 0;
         world.InputTable.mousedelta[1] = 0;
@@ -97,11 +100,11 @@ class GameMechanics {
       let sphericalCoords = new THREE.Vector3().setFromSphericalCoords(1, phi, theta);
       targetLook.copy(sphericalCoords);
       targetLook.y = 0;
-      targetPosition.copy(targetLook.add(camera.position));
+
       character.mesh.lookAt(targetPosition);
 
       CanFloorCast.hasHit = false;
-      CanFloorCast.from = new CANNON.Vec3().copy(character.body.position.vadd(new CANNON.Vec3(0,2,0)));
+      CanFloorCast.from = new CANNON.Vec3().copy(character.body.position.vadd(new CANNON.Vec3(0,0.1,0)));
       CanFloorCast.to = new CANNON.Vec3(0, -this.character.body.boundingRadius*1.2, 0).vadd(character.body.position);
 
       raycastResult.reset();
@@ -112,32 +115,30 @@ class GameMechanics {
       CannonWorld.addBody(character.body);
 
       if (character.colliding) {
-        moveDis = -character.Speed * deltatime;
+        moveDis = -character.Speed/deltatime;
         if (this.ThirdPerson) moveDis *= -1;
         character.walking = false;
 
-        const forward = new THREE.Vector3(0, 0, 1).applyQuaternion(character.mesh.quaternion);
-        const right = new THREE.Vector3(1, 0, 0).applyQuaternion(character.mesh.quaternion);
-        moveDis *= 20;
+        const forward = new THREE.Vector3(0, 0, -1).applyQuaternion(character.mesh.quaternion);
+        const right = new THREE.Vector3(-1, 0, 0).applyQuaternion(character.mesh.quaternion);
+        // moveDis *= 20;
         const yVel = character.body.velocity.y;
         character.body.velocity.y = 0;
-        if (world.InputTable.w) { character.body.velocity.vadd(forward.multiplyScalar(-moveDis), character.body.velocity); character.walking = true; }
-        if (world.InputTable.a) { character.body.velocity.vadd(right.multiplyScalar(-moveDis), character.body.velocity); character.walking = true; }
-        if (world.InputTable.s) { character.body.velocity.vadd(forward.multiplyScalar(moveDis), character.body.velocity); character.walking = true; }
-        if (world.InputTable.d) { character.body.velocity.vadd(right.multiplyScalar(moveDis), character.body.velocity); character.walking = true; }
+        if (world.InputTable.w) { character.body.velocity.vadd(forward.multiplyScalar(moveDis), character.body.velocity); character.walking = true; }
+        if (world.InputTable.a) { character.body.velocity.vadd(right.multiplyScalar(moveDis), character.body.velocity); character.walking = true; }
+        if (world.InputTable.s) { character.body.velocity.vadd(forward.multiplyScalar(-moveDis), character.body.velocity); character.walking = true; }
+        if (world.InputTable.d) { character.body.velocity.vadd(right.multiplyScalar(-moveDis), character.body.velocity); character.walking = true; }
         if (character.walking) {
           character.body.velocity.normalize();
           character.body.velocity.scale(character.Speed, character.body.velocity);
           character.body.velocity.y = yVel;
         }
-        if (world.InputTable[" "] && floorHit) {
+        if (world.InputTable[" "] && (floorHit || (character.wallClimbing))) {
           character.body.velocity.y = character.jumpPower;
           character.jumping = true;
         } else if (floorHit) {
           character.jumping = false;
         }
-
-        character.body.touchingObjects = false;
         if (character.body.position.distanceTo(character.body.previousPosition) > 0.1) {
           character.recentlyMoved = true;
         } else {
@@ -170,23 +171,26 @@ class GameMechanics {
         // const disOut = this.cameraOffset.y;
         const dis = this.cameraOffset.length();
 
-        const upVec = new THREE.Vector3(0, 1, 0);
         const lookVec = sphericalCoords.clone();
         // const camPos = lookVec.clone().multiplyScalar(disOut*this.lastOffsetPercent).add(character.mesh.position).add(upVec.clone().multiplyScalar(disAbove*this.lastOffsetPercent));
         const camPos = lookVec.multiplyScalar(this.lastOffsetPercent * dis).add(character.mesh.position);
         let sceneChildren = [...this.world.scene.children];
         let mesh = character.mesh.getObjectByProperty("type","SkinnedMesh") || character.mesh 
-        sceneChildren = sceneChildren.filter(child => (child != character.mesh && child != mesh && child.layers != undefined));
+        sceneChildren = sceneChildren.filter(child => (child != character.mesh && child != mesh && child.layers != undefined && !child.opaque));
         // console.log(sceneChildren)
-        wallCaster.set(character.mesh.position, camPos.clone().sub(character.mesh.position).normalize());
+        wallCaster.set(character.mesh.position.clone(), camPos.clone().sub(character.mesh.position).normalize());
+        excludeCaster.set(character.mesh.position.clone(), camPos.clone().sub(character.mesh.position).normalize());
         // debug.position.copy(wallCaster.ray.origin.clone().add(new THREE.Vector3(0,0,0)).add(wallCaster.ray.direction.clone().multiplyScalar(Date.now()%1000)))
         let intersects = wallCaster.intersectObjects(sceneChildren);
-        
+        // console.log(loader._excludeHullMeshes)
+        // console.log(loader._excludeHullMeshes.length)
+        let excludeIntersects = excludeCaster.intersectObjects(loader._excludeHullMeshes)
         if (intersects.length > 0) {
           let distance = intersects[0].distance;
           let percent = distance / dis;
+          if(excludeIntersects.length > 0 && excludeIntersects[0].distance < distance)percent = 1.02
           if (percent < 1.01) {
-            percent = (this.lastOffsetPercent * 0.8 + percent * 0.2) -0.05;
+            percent = (this.lastOffsetPercent * 0.8 + percent * 0.2);
             this.lastOffsetPercent = percent;
             // camPos.copy(sphericalCoords.clone().multiplyScalar(disOut*percent).add(character.mesh.position).add(upVec.multiplyScalar(disAbove*percent)));
           }else{

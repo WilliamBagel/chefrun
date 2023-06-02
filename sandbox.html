@@ -15,16 +15,25 @@
             <button id = 'set-server-port'>Set the port address</button>
             <p id = 'gamecode-display'>you have no code (x_x)</p>
         </div>
-        <script type="importmap">
+        <!-- <script type="importmap">
             {
                 "imports": {
-                    "three": "https://threejs.org/build/three.module.js"
+                    "three": "https://threejs.org/build/three.module.js",
+                    "cannon": "https://pmndrs.github.io/cannon-es/dist/cannon-es.js"
                 }
             }
+        </script> -->
+        <script type="importmap">
+            {
+              "imports": {
+                  "three": "./dependencies/three.module.js",
+                  "cannon": "./dependencies/cannon-es.js"
+              }
+          }
         </script>
         <!-- <script src="https://html2canvas.hertzen.com/dist/html2canvas.js"></script> -->
-        <script src="https://cdn.pubnub.com/sdk/javascript/pubnub.7.0.0.js"></script>
-        <script src = "https://cdn.socket.io/socket.io-3.0.5.min.js"></script>
+        <!-- <script src="https://cdn.pubnub.com/sdk/javascript/pubnub.7.0.0.js"></script> -->
+        <script src = "dependencies\socket.io-3.0.5.min.js"></script>
         <script src = ".\dist\Randomizer.js"></script>
         <!-- <script src = "https://unpkg.com/three@0.122.0/dist/cannon-es.js"></script>
         <script src = "https://unpkg.com/three@0.122.0/build/three.module.js"></script> -->

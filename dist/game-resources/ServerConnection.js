@@ -13,9 +13,12 @@ class ServerConnection {
     this.connected = false;
     this.gameEvents = {};
 
+    this._connectedObjects = [];
+    this._animatedObjects = [];
+
     this.messageTypes = {
-      'server-info': (message)=>{
-        this.callGameEvent("game-rooms-update",message.rooms)
+      'server-info': (message) => {
+        this.callGameEvent("game-rooms-update", message.rooms);
       },
       'server': (message) => {
         console.log(message);
@@ -29,7 +32,7 @@ class ServerConnection {
             this.callGameEvent("begin");
             break;
           case "game-end":
-            this.callGameEvent("end")
+            this.callGameEvent("end");
         }
         //recive messages about when game is starting
         //?somewhere else send game events like if they touched end point?
@@ -47,9 +50,10 @@ class ServerConnection {
         // this.callGameEvent("player-data-update",data.name,data.model);
       },
       'player-left': (data) => {
-        if(this.members[data.id]){
-          this.callGameEvent("player-left",this.members[data.id],data.id)
-          if(this.members[data.id])delete this.members[data.id]
+        if (this.members[data.id]) {
+          this.callGameEvent("player-left", this.members[data.id], data.id);
+          if (this.members[data.id]) delete this.members[data.id];
+          if (this._connectedObjects[data.id]) delete this.members[data.id];
         }
       },
       'player-set-data': (data) => {
@@ -57,24 +61,47 @@ class ServerConnection {
         ({ id, data } = data);
         if (this.members[id]) {
           this.members[id].model = data.model;
-          if(data.name)this.members[id].name = data.name;
+          if (data.name) this.members[id].name = data.name;
+          this.callGameEvent("player-data-update", this.members[id].name, data.model);
         }
-        this.callGameEvent("player-data-update",this.members[id].name,data.model);
+      },
+      'player-data-changed': (data) => {
+        this.callGameEvent("this-data-update", data.model);
       },
       'player-update': (message) => {
         let { updates, id } = message;
         for (let i = 0; i < updates.length; i++) {
           const type = updates[i].type;
           const data = updates[i].data;
-          if (type == 'transformation' && this.gameStatus == "ingame"&& this.members[id]) {
-            let char = this.members[id];
-            char.body.position.set(parseFloat(data[1][0]), parseFloat(data[1][1]), parseFloat(data[1][2]));
-            let parsedQuat = [];
-            for (let n in data[0]) {
-              parsedQuat[n] = (data[0][n].charCodeAt(0) - this._encryptStart) / this._encryptPrecision;
+          if (this.gameStatus != 'ingame') continue;
+          if (type == 'transformation') {
+            let object, uuid, transData, position, quaternion;
+            for (uuid in data) {
+              if (uuid == this.id) continue;
+              object = this._connectedObjects[uuid];
+              if (!object) { console.log(uuid + " is not a connected object"); continue; };
+              transData = data[uuid];
+              let parsedQuat = [];
+              for (let n in transData[0]) {
+                parsedQuat[n] = (transData[0][n].charCodeAt(0) - this._encryptStart) / this._encryptPrecision;
+              }
+              // console.log(parsedQuat,data)
+              if(!object.lerpController)return console.error(uuid)
+              position = { x: parseFloat(transData[1][0]), y: parseFloat(transData[1][1]), z: parseFloat(transData[1][2]) };
+              quaternion = { x: parsedQuat[0], y: parsedQuat[1], z: parsedQuat[2], w: parsedQuat[3] };
+              object.lerpController.setTarget(position, quaternion);
             }
-            // console.log(parsedQuat,data)
-            char.body.quaternion.set(parsedQuat[0], parsedQuat[1], parsedQuat[2], parsedQuat[3]).normalize();
+          } else if (type == "animation") {
+            let object, uuid, animData;
+            for (uuid in data) {
+              if (uuid == this.id) continue;
+              object = this._animatedObjects.filter((obj) => obj[0] == uuid);
+              if (object.length == 0) continue;
+              object = object[0][1];
+              if (!object) { console.warn(uuid + " is not an animated object"); continue; };
+              animData = data[uuid];
+              object.updateAnimation(animData);
+            }
           }
         }
       },
@@ -99,14 +126,14 @@ class ServerConnection {
             }
             this.callGameEvent("room-joined");
           } else {
-            this.callGameEvent("failed-room-join")//"-_- noooo, " + data.info;
+            this.callGameEvent("failed-room-join");//"-_- noooo, " + data.info;
             console.log(data);
           }
         }
       },
-      'disconnect': (...args)=>{
-        this.disconnect()
-        this.callGameEvent('disconnect')
+      'disconnect': (...args) => {
+        this.disconnect();
+        this.callGameEvent('disconnect');
       }
     };
 
@@ -121,8 +148,9 @@ class ServerConnection {
 
     this.connected = true;
     this.socket.on('connect', (socket) => {
-      this.id = this.socket.id
+      this.id = this.socket.id;
       this.connected = true;
+      this.callGameEvent('connected-to-server');
       //not fired bc this is registered after connection
       // lol, no im just stupid and but connection not connect ,_,
     });
@@ -143,37 +171,59 @@ class ServerConnection {
   disconnect() {
     if (this.listening) {
       clearInterval(this.intervalId);
-      this.listening = false
+      this.listening = false;
       // for(let i in this.members){
       //     const member = this.members[i]
       //     Game.scene.remove(member)
       // }
     }
   }
-  setTransSending(bool, character) {
+  setMemberModel(id, model) {
+    const data = this.members[id];
+    data.mesh = model.mesh;
+    data.body = model.body;
+    this._connectedObjects[id] = model.body;
+  }
+  setConnectedObjects(objects) {
+    this._connectedObjects = objects;
+  }
+  setAnimatedObjects(objects) {
+    this._animatedObjects = objects;
+  }
+  setTransSending(bool) {
     if (bool && !this.transSending) {
+      let object;
       this.addPreUpdateListener('transSending', () => {
-        const cD = {
-          q: [
-            character.body.quaternion.x,
-            character.body.quaternion.y,
-            character.body.quaternion.z,
-            character.body.quaternion.w
-          ],
-          p: [
-            (character.body.position.x).toFixed(2),
-            (character.body.position.y).toFixed(2),
-            (character.body.position.z).toFixed(2)
-          ]
-        };
-        let smallQuat = "";
-        for (let i in cD.q) {
-          smallQuat += String.fromCharCode(Math.round(cD.q[i] * this._encryptPrecision) + this._encryptStart);
+        const data = {};
+        for (let uuid in this._connectedObjects) {
+          if (this.members[uuid]) continue;
+          object = this._connectedObjects[uuid];
+          if (object.isCharacter) {
+            uuid = this.id;
+          } else if (!this.server) continue;
+          const cD = {
+            q: [
+              object.quaternion.x,
+              object.quaternion.y,
+              object.quaternion.z,
+              object.quaternion.w
+            ],
+            p: [
+              (object.position.x).toFixed(2),
+              (object.position.y).toFixed(2),
+              (object.position.z).toFixed(2)
+            ]
+          };
+          let smallQuat = "";
+          for (let i in cD.q) {
+            smallQuat += String.fromCharCode(Math.round(cD.q[i] * this._encryptPrecision) + this._encryptStart);
+          }
+          data[uuid] = [smallQuat, cD.p];
+          // console.log(smallQuat)
         }
-        // console.log(smallQuat)
         this.queueUpData({
           type: 'transformation',
-          data: [smallQuat, cD.p]
+          data
         });
       });
       this.transSending = true;
@@ -182,14 +232,37 @@ class ServerConnection {
       this.transSending = false;
     }
   }
+  setAnimSending(bool) {
+    if (bool && !this.animSending) {
+      let object, uuid, data;
+      for (let i in this._animatedObjects) {
+        uuid = this._animatedObjects[i][0];
+        object = this._animatedObjects[i][1];
+        if (object.isConnectedCharacter) continue;
+        object.addAnimationListener((aData, _, changed) => {
+          if (!changed) return;
+          data = {};
+          data[uuid] = aData;
+          this.queueUpData({
+            type: 'animation',
+            data
+          });
+        });
+      }
+      this.animSending = true;
+    } else if (this.transSending) {
+      //remove anim callbacks
+      this.animSending = false;
+    }
+  }
   addGameEventListenser(event, foo) {
     this.gameEvents[event] = foo;
   }
-  callGameEvent(event){
-    delete arguments[0]
-    let args = Array.from(arguments)
-    args.shift()
-    if(this.gameEvents[event])this.gameEvents[event](...args)
+  callGameEvent(event) {
+    delete arguments[0];
+    let args = Array.from(arguments);
+    args.shift();
+    if (this.gameEvents[event]) this.gameEvents[event](...args);
   }
   hostServer() {
     this.send('host-server', {

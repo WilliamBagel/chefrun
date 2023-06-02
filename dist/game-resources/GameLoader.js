@@ -1,11 +1,14 @@
 import * as THREE from "three";//"https://threejs.org/build/three.module.js"; 
-import * as CANNON from 'https://pmndrs.github.io/cannon-es/dist/cannon-es.js';
-import * as SkeletonUtils from "https://threejs.org/examples/jsm/utils/SkeletonUtils.js";
-import { GLTFLoader } from 'https://threejs.org/examples/jsm/loaders/GLTFLoader.js';
-import { ConvexGeometry } from 'https://unpkg.com/three@0.122.0/examples/jsm/geometries/ConvexGeometry.js';
-import { SimplifyModifier } from 'https://threejs.org/examples/jsm/modifiers/SimplifyModifier.js';
-import { RatMechanics } from './RatMechanics.js'
-import * as OLDTHREE from 'https://unpkg.com/three@0.122.0/build/three.module.js';
+import * as CANNON from 'cannon';
+import * as SkeletonUtils from "/dependencies/SkeletonUtils.js";//"https://threejs.org/examples/jsm/utils/SkeletonUtils.js";
+import { GLTFLoader } from "/dependencies/GLTFLoader.js";//'https://threejs.org/examples/jsm/loaders/GLTFLoader.js';
+// import { ConvexGeometry } from 'https://unpkg.com/three@0.122.0/examples/jsm/geometries/ConvexGeometry.js';
+// import { SimplifyModifier } from 'https://threejs.org/examples/jsm/modifiers/SimplifyModifier.js';
+import { RatMechanics } from './RatMechanics.js';
+// import * as OLDTHREE from 'https://unpkg.com/three@0.122.0/build/three.module.js';
+// import { Matrix4, ObjectSpaceNormalMap, Vector3 } from "three";
+import { applyExcludeHulls } from "./ExcludeHulls.js";
+// import { Euler } from "three";
 const modelLoader = new GLTFLoader();
 const textureLoader = new THREE.TextureLoader();
 
@@ -21,33 +24,37 @@ class GameLoader {
       three: {},
       cannon: {}
     };
+    this._excludeHulls = [];
+    this._shaderNeedValidation = [];
     this.imports = { models: {}, images: {}, videos: {} };
     this.checkPoints = {};
     this._onrender = [];
     // this.objects = []
+    this._loadedObjects = {};
+    this._excludeHullMeshes = [];
 
     this.initCore();
     Game = this;
-    this.debug = game.flags && game.flags.debug
+    this.debug = game.flags && game.flags.debug;
     //Game is not yet defined
-    this.gameLoading = this.asyncLoad(game,world)
+    this.gameLoading = this.asyncLoad(game, world);
   }
-  asyncLoad(game,world){
+  asyncLoad(game, world) {
     return new Promise(async (res) => {//but now it is//PROMISE THIS, ADD LOADED TO THIS
       await this.loadImports(game.imports);
       this.loadFolder(game, GamEnum);
-      this.initCharacter(game.character)
+      this.initCharacter(game.character);
       world.addSystem(myMeshes);
-      this.isLoaded = true
-      res()
+      this.isLoaded = true;
+      res();
     });
   }
   set onrender(foo) {
     this.world._callOnRender.push(foo);
   }
-  initCharacter(folder){
+  initCharacter(folder) {
     // const CannonWorld = this.CannonWorld
-    folder.position = new THREE.Vector3(0,0,0)
+    folder.position = new THREE.Vector3(0, 0, 0);
     folder.size = new THREE.Vector3(folder.size[0], folder.size[1], folder.size[2]);
     let mesh, body;
     if (folder.model) {
@@ -79,7 +86,7 @@ class GameLoader {
       //   }
       // }
       // console.log(mesh)
-      const res = this.loadModel(folder,true);
+      const res = this.loadModel(folder, true);
       mesh = res.mesh;
       body = res.body;
       // mesh.material.map.encoding = THREE.LinearEncoding;
@@ -91,36 +98,38 @@ class GameLoader {
       });
     }
 
-    
+
     // if (folder.size) (typeof (folder.size) == 'array' && mesh.scale.set(folder.size[0], folder.size[1], folder[2])) || (typeof (folder.size) == 'number' && mesh.scale.set(folder.size, folder.size, folder.size));
     // mesh.scale.multiplyScalar(2)
     // this.scene.add(mesh);
 
     // body.mass = folder.mass
     // body.updateMassProperties()
-    
-    body.position = new CANNON.Vec3(0, 0, 0),
-    body.material = this.materials.cannon[folder.material],
+
+    body.position = new CANNON.Vec3(0, 0, 0);
+    body.material = this.materials.cannon[folder.material];
     // body.type = CANNON.Body.DYNAMIC
     // body.collisionFilterMask = 1 | 2 | 4,
-      // fixedRotation: false
+    // fixedRotation: false
     body.angularDamping = 0.5;
     body.linearDamping = 0.5;
-    const character = this.character
+    const character = this.character;
     body.addEventListener('collide', (e) => {
       character.colliding = true;
     });
 
     // this.CannonWorld.addBody(body);
     new SyncedMesh(mesh, body);
-    
+
     character.mesh = mesh;
     character.body = body;
-    if(folder.model.search("Rat") != -1){
+    // mesh.receiveShadow = false;
+    if (folder.model.search("Rat") != -1) {
       //INIT RAT BOTS!!!
-      const ratMechs = new RatMechanics(this,this.scene,folder,this.character)
-      this.world.addSystem(ratMechs)
-      this.character.ratMechanics = ratMechs
+      const ratMechs = new RatMechanics(this, this.character);
+      this.world.addSystem(ratMechs);
+
+      this.character.ratMechanics = ratMechs;
     }
   }
   loadFolder(folder, reference) {
@@ -128,10 +137,11 @@ class GameLoader {
       if (folder[i] == null && i != 'properties') return console.warn(i + " does not exist in game data");
       const file = folder[i];
       if (typeof (folder[i]) != reference[i] && StringTypes[reference[i]]) return console.warn(i + "is not the correct type");
-      console.log('"loading" ' + i);
+      console.log('loading ' + i);
       switch (i) {
         case 'objects':
-          this.loadObjects(folder[i].list);
+          const filtered = this.loadExcludeHulls(folder[i].list);
+          this.loadObjects(filtered);
           break;
         case 'materials':
           this.loadMaterials(folder[i]);
@@ -164,6 +174,10 @@ class GameLoader {
             if (typeof (path) != 'string' && path.constructor != Array) return console.warn("import " + name + " should be a string or array, not " + typeof (path));
             if (path.constructor == Array) simp = path[1], path = path[0];
             const gltf = await importModel(path);
+            let objects = getObjectsWithProperty(gltf.scene, "material");
+            for (let j in objects) {
+              this.materials.three[name] = objects[j].material;
+            }
             gltf.simplifyAmount = simp;
             this.imports.models[name] = gltf;
           }
@@ -203,29 +217,57 @@ class GameLoader {
           for (let name in materials[i]) {
             const mat = materials[i][name];
             let info = mat.settings;
+            mat.name = name;
 
             if (info == null) info = {};
+            if (mat.type == "modify" /*&& this.materials.three[name] != undefined*/) {
+              let material = this.materials.three[name];
+              for (let p in info) {
+                if (["alphaMap", "aoMap", "bumpMap", "displacementMap", "emissiveMap", "envMap",
+                  "lightMap", "normalMap", "specularMap","roughnessMap"].indexOf(p) != -1 && material.map != null) {
+                    material[p] = material.map
+                    console.log(material)
+                    continue
+                }
+                material[p] = info[p];
+              }
+              material.needsUpdate = true;
+              if (mat.excludeHulls) this._shaderNeedValidation.push(material);
+              continue;
+            }
+            if (this.materials.three[name] != undefined) return console.warn("three material " + name + " has already been defined");
             if (THREE[mat.type] == null) return console.warn(mat.type + " is not a valid material type");
-            
-            ["map","alphaMap","aoMap","bumpMap","displacementMap","emissiveMap","envMap",
-            "lightMap","normalMap","specularMap",].filter(map => info[map] != null).forEach(map=>info[map] = this.imports.images[info[map]] || this.imports.videos[info[map]])
+
+            ["map", "alphaMap", "aoMap", "bumpMap", "displacementMap", "emissiveMap", "envMap",
+              "lightMap", "normalMap", "specularMap",].filter(map => info[map] != null).forEach(map => info[map] = this.imports.images[info[map]] || this.imports.videos[info[map]]);
             // if (info.map) {
             //   
-              // why did i write have this ?
-              // if (info.texture) {
-              //   const tex = info.texture;
-              //   for (let i in tex) {
-              //     if (typeof (tex[i] == 'string')) {
-              //       tex[i] = THREE[i];
-              //     }
-              //     info.map[i] = tex[i];
-              //   }
-              //   info.texture = undefined;
-              // }
+            // why did i write have this ?
+            // if (info.texture) {
+            //   const tex = info.texture;
+            //   for (let i in tex) {
+            //     if (typeof (tex[i] == 'string')) {
+            //       tex[i] = THREE[i];
+            //     }
+            //     info.map[i] = tex[i];
+            //   }
+            //   info.texture = undefined;
             // }
-            let material = new THREE[mat.type](info);
+            // }
+            if (mat.type == "ShaderMaterial") {
+              // console.log(info.uniforms && info.uniforms.excludeHulls)
+              const textureName = info.uniforms && Object.keys(info.uniforms).filter(name => name.toLowerCase().indexOf("texture") != -1);
+              // console.log(textureName)
+              if (textureName) for (let j in textureName) { info.uniforms[textureName[j]].value = this.imports.images[info.uniforms[textureName[j]].value]; }
 
-            if (this.materials.three[name] != undefined) return console.warn("three material " + name + " has already been defined");
+            }
+
+
+            // if (info.uniforms && info.uniforms.excludeHulls) {
+            //   this._shaderNeedValidation.push(mat);
+            //   // continue;
+            let material = new THREE[mat.type](info);
+            if (mat.excludeHulls) this._shaderNeedValidation.push(material);
             this.materials.three[name] = material;
           }
           break;
@@ -255,260 +297,446 @@ class GameLoader {
       }
     }
   }
-  loadObjects(objects) {
-    const props = GamEnum.objects.properties;
-    for (let i = 0; i < objects.length; i++) {
-      const obj = objects[i];
-      for (let prop in props) {
-        if (obj[prop] != null) continue;
-        if (prop == 'mass' || (prop == 'shader' && obj.type == 'border')) continue;
-        return console.warn("property " + prop + " of " + JSON.stringify(obj) + " should be type " + props[prop] + " but is " + typeof (obj[prop]));
+  validateShaders() {
+    const hulls = [];
+
+    for (let i in this._excludeHulls) {
+      let obj = this._excludeHulls[i];
+      obj.position = new THREE.Vector4().fromArray(obj.position);
+      obj.position.w = 0;
+
+      if (obj.shape == "sphere") {
+        hulls.push(new THREE.Vector4(obj.position.x, obj.position.y, obj.position.z, obj.radius));
+      } else if (obj.shape == "box") {
+        const scale = new THREE.Vector4().fromArray(obj.size);
+        scale.w = 0;
+        hulls.push(obj.position.clone().sub(scale.clone().multiplyScalar(0.5)));
+        hulls.push(obj.position.clone().add(scale.clone().multiplyScalar(0.5)));
+        hulls.push(new THREE.Vector4(THREE.MathUtils.degToRad(obj.rotation[0]), THREE.MathUtils.degToRad(obj.rotation[1]), THREE.MathUtils.degToRad(obj.rotation[2]), 0));
       }
-      obj.position = new THREE.Vector3(obj.position[0], obj.position[1], -obj.position[2]);
-      obj.size = new THREE.Vector3(obj.size[0], obj.size[1], obj.size[2]);
-      switch (obj.type.toLowerCase()) {
-        case 'sync-import': {
-          this.loadModel(obj, true);
-        } break;
-        case 'sync-default':
-          if (obj.shape == 'box') {
-            const geo = new THREE.BoxGeometry();
-            const mat = this.materials.three[obj.shader];
-            const mesh = new THREE.Mesh(geo, mat);
-            mesh.scale.set(obj.size.x, obj.size.y, obj.size.z);
-            mesh.position.set(obj.position.x, obj.position.y, obj.position.z);
-            obj.rotation = obj.rotation ? obj.rotation : [0, 0, 0];
-            mesh.quaternion.copy(new THREE.Quaternion().setFromEuler(new THREE.Euler(THREE.MathUtils.degToRad(obj.rotation[0]), THREE.MathUtils.degToRad(obj.rotation[1]), THREE.MathUtils.degToRad(obj.rotation[2]),'XYZ')));
-            mesh.receiveShadow = true
-            mesh.castShadow = true
-            this.scene.add(mesh); 
-            const body = new CANNON.Body({
-              mass: obj.mass,
-              shape: new CANNON.Box(new CANNON.Vec3(obj.size.x / 2, obj.size.y / 2, obj.size.z / 2)),
-              type: CANNON.Body.STATIC,
-              position: new CANNON.Vec3(obj.position.x, obj.position.y, obj.position.z),
-              quaternion: new CANNON.Quaternion().copy(mesh.quaternion)
-            });
-            this.CannonWorld.addBody(body);
+      /*ignore camera*/
+      const geo = new THREE.BoxGeometry();
+      const mat = this.materials.three["default"];
+      const mesh = new THREE.Mesh(geo, mat);
+      mesh.scale.set(obj.size[0], obj.size[1], obj.size[2]);
+      mesh.position.set(obj.position.x, obj.position.y, obj.position.z);
+      obj.rotation = obj.rotation ? obj.rotation : [0, 0, 0];
+      mesh.quaternion.copy(new THREE.Quaternion().setFromEuler(new THREE.Euler(THREE.MathUtils.degToRad(obj.rotation[0]), THREE.MathUtils.degToRad(obj.rotation[1]), THREE.MathUtils.degToRad(obj.rotation[2]), 'XYZ')));
+      mesh.updateMatrixWorld();
+      this._excludeHullMeshes.push(mesh);
+    }
+    // console.log(hulls);
+    for (let i in this._shaderNeedValidation) {
+      let shader = this._shaderNeedValidation[i];
+      // const info = this._shaderNeedValidation[i];
+      // const { settings } = info;
 
-            new SyncedMesh(mesh, body, true, obj.syncDir);
-          } else {
-            console.warn(obj.shape + " is not a valid object shape");
-          }
-          break;
-          case 'visual': {
-            if (obj.shape == 'box') {
-              const geo = new THREE.BoxGeometry();
-              const mat = this.materials.three[obj.shader];
-              const mesh = new THREE.Mesh(geo, mat);
-              mesh.scale.set(obj.size.x, obj.size.y, obj.size.z);
-              mesh.position.set(obj.position.x, obj.position.y, obj.position.z);
-              obj.rotation = obj.rotation ? obj.rotation : [0, 0, 0];
-              mesh.quaternion.copy(new THREE.Quaternion().setFromEuler(new THREE.Euler(THREE.MathUtils.degToRad(obj.rotation[0]), THREE.MathUtils.degToRad(obj.rotation[1]), THREE.MathUtils.degToRad(obj.rotation[2]),'XYZ')));
-              mesh.receiveShadow = true
-              mesh.castShadow = true
-              this.scene.add(mesh);
-            } else {
-              console.warn(obj.shape + " is not a valid object shape");
-            }
-            break; }
-          case 'sync-poly': {
-          const geo = new THREE.BufferGeometry();
-          // let verts = new Float32Array(obj.verts)
-          // let indices = obj.indices
-          // let verts, indices;
-          let trimesh;
-          let tverts = [], cverts = [], uvs;
-          if (obj.shape == 'tri') {
-            tverts = new Float32Array(obj.verts);
-            // cverts = obj.verts
-            // indices = [0,1,2]
-            cverts = obj.verts;
-
-            for (let i = 0; i < obj.verts.length; i++) {
-              obj.verts[i] *= 2;
-            }
-            trimesh = new CANNON.Trimesh(obj.verts, obj.indices);
-          } else if (obj.shape == 'quad') {
-            for (let i = 0; i < obj.verts.length; i++) {
-              tverts.push(obj.verts[i].toFixed(5));
-            }
-            uvs = [];
-            obj.verts.forEach((v, i) => (i % 3 != 1 && uvs.push(v)));
-            const min = Math.min.apply(null, uvs);
-            uvs = uvs.map(v => v - min);
-            const max = Math.max.apply(null, uvs);
-            uvs = uvs.map(v => v / max);
-            uvs = new Float32Array(uvs);
-            tverts = new Float32Array(tverts);
-            for (let i = 0; i < obj.verts.length; i++) {
-              obj.verts[i] *= 2;
-            }
-            trimesh = new CANNON.Trimesh(obj.verts, obj.indices);
-          } else if (obj.shape == 'torus') {
-            trimesh = CANNON.Trimesh.createTorus(10, 3.5, 5, 5);
-          }
-
-          geo.setAttribute('position', new THREE.BufferAttribute(tverts, 3));
-          geo.setAttribute('uv', new THREE.BufferAttribute(uvs, 2));
-          geo.setIndex(obj.indices);
-          const mat = this.materials.three[obj.shader];
-          mat.side = THREE.DoubleSide;
-          const mesh = new THREE.Mesh(geo, mat);
-          mesh.position.set(obj.position.x, obj.position.y, obj.position.z);
-          obj.rotation = obj.rotation ? obj.rotation : [0, 0, 0];
-          mesh.quaternion.copy(new THREE.Quaternion().setFromEuler(new THREE.Euler(THREE.MathUtils.degToRad(obj.rotation[0]), THREE.MathUtils.degToRad(obj.rotation[1]), THREE.MathUtils.degToRad(obj.rotation[2]))));
-
-          this.scene.add(mesh);
+      // console.log(info);
+      // if (!settings.uniforms) settings.uniforms = {};
 
 
-          trimesh.setScale(new CANNON.Vec3(obj.size.x / 2, obj.size.y / 2, obj.size.z / 2));
-          const body = TrimeshToPolyhedron(trimesh, new CANNON.Vec3(0, 1, 0));
-          body.type = CANNON.Body.KINEMATIC;
-          body.mass = 10;
-          body.position.copy(obj.position);
-          body.quaternion.copy(mesh.quaternion);
-          this.CannonWorld.addBody(body);
-          new SyncedMesh(mesh, body);
 
-          // console.log(body,mesh)
-        } break;
-        case "checkpoint": {
+      // settings.fragmentShader = this.replaceShaderCode(settings.fragmentShader, "hullNumber", hulls.length);
+      // console.log(i, this._shaderNeedValidation);
+      // const shader = new THREE[info.type](settings);
+      // console.log(shader);
+      shader.onBeforeCompile = (s) => {
+        s = applyExcludeHulls(s);
+        s.fragmentShader = this.replaceShaderCode(s.fragmentShader, "hullNumber", hulls.length);
+        // console.log(s.fragmentShader \);
+        s.uniforms.excludeHulls = { value: [] };
+        s.uniforms.excludeHulls.value = hulls;
+        shader.userData.shader = shader;
+      };
+      shader.forceSinglePass = true
+      shader.needsUpdate = true;
+      // this.materials.three[info.name] = shader;
+    }
+  }
+  replaceShaderCode(shader, variable, value) {
+    let newShader = shader;
+    let first = true;
+    while (newShader != shader || first) {
+      first = false;
+      shader = newShader;
+      // let prop = "hullNumber";
+      let start = "<" + variable + ">";
+      let end = "<\/" + variable + ">";
+      let reg = RegExp("(" + start + "\\*\/)([^\w+])(\/\\*" + end + ")");///<hullNumber>\/\*\w+\*\/<\/hullNumber>"/;
+      // reg[Symbol.match] = false;
+      // str.replace(prop,"")
+      // console.log(reg, reg.exec(shader));
+      newShader = shader.replace(reg, "$1" + value + "$3");
+    }
+    return newShader;
+  }
+  loadExcludeHulls(objects) {
+    objects = objects.filter(obj => {
+      if (obj.type.toLowerCase() == "excludehull") {
+        console.log("found excludehull");
+        this._excludeHulls.push({ ...obj });
+        obj.type = "visual";
+        return false;
+      }
+      return true;
+    });
+    this.validateShaders();
+    return objects;
+  }
+  _loadObject(obj) {
+    let mesh;
+    let body;
+    switch (obj.type.toLowerCase()) {
+      case 'sync-import': {
+        const tmp = this.loadModel(obj, true);
+        if (tmp.mesh) mesh = tmp.mesh;
+        if (tmp.body) body = tmp.body;
+      } break;
+      case 'import': {
+        const model = this.loadModel(obj, false).mesh;
+        model.geometry.applyQuaternion(new THREE.Quaternion().setFromEuler(new THREE.Euler(Math.PI / 2, 0, Math.PI / 2)));
+        this.scene.add(model);
+        if (obj.parent) {
+          const parent = this._fetchObject(obj.parent).body;
+          if (parent == undefined) console.error("Parent with uuid " + obj.parent + " does not exist");
+          new SyncedMesh(model, parent, true, true);
+        }
+      } break;
+      case 'sync-default':
+        if (obj.shape == 'box') {
           const geo = new THREE.BoxGeometry();
           const mat = this.materials.three[obj.shader];
-          const mesh = new THREE.Mesh(geo, mat);
+          mesh = new THREE.Mesh(geo, mat);
           mesh.scale.set(obj.size.x, obj.size.y, obj.size.z);
           mesh.position.set(obj.position.x, obj.position.y, obj.position.z);
+          obj.rotation = obj.rotation ? obj.rotation : [0, 0, 0];
+          mesh.quaternion.copy(new THREE.Quaternion().setFromEuler(new THREE.Euler(THREE.MathUtils.degToRad(obj.rotation[0]), THREE.MathUtils.degToRad(obj.rotation[1]), THREE.MathUtils.degToRad(obj.rotation[2]), 'XYZ')));
+          mesh.receiveShadow = true;
+          mesh.castShadow = true;
           this.scene.add(mesh);
-
-          const body = new CANNON.Body({
+          body = new CANNON.Body({
             mass: obj.mass,
             shape: new CANNON.Box(new CANNON.Vec3(obj.size.x / 2, obj.size.y / 2, obj.size.z / 2)),
-            type: CANNON.Body.STATIC,
-            // isTrigger: true,
+            type: obj.syncdirection && CANNON.Body.DYNAMIC || CANNON.Body.STATIC,
             position: new CANNON.Vec3(obj.position.x, obj.position.y, obj.position.z),
             quaternion: new CANNON.Quaternion().copy(mesh.quaternion)
           });
+          body.syncdirection = obj.syncdirection;
           this.CannonWorld.addBody(body);
 
-          body.addEventListener("collide", function (e) {
-            Game.character.checkPoint = obj.pointNumber;
-          });
-
-          new SyncedMesh(mesh, body);
-
-          this.checkPoints[obj.pointNumber] = mesh;
-        } break;
-        case 'border':
-          const border = new CANNON.Body({
-            mass: 0,
-            shape: new CANNON.Box(new CANNON.Vec3(obj.size.x / 2, obj.size.y / 2, obj.size.z / 2)),
-            type: CANNON.Body.STATIC,
+          new SyncedMesh(mesh, body, true, obj.syncdirection);
+        } else if (obj.shape == "sphere") {
+          const geo = new THREE.SphereGeometry();
+          const mat = this.materials.three[obj.shader];
+          mesh = new THREE.Mesh(geo, mat);
+          mesh.scale.set(obj.size.x / 2, obj.size.y / 2, obj.size.z / 2);
+          mesh.position.set(obj.position.x, obj.position.y, obj.position.z);
+          obj.rotation = obj.rotation ? obj.rotation : [0, 0, 0];
+          mesh.quaternion.copy(new THREE.Quaternion().setFromEuler(new THREE.Euler(THREE.MathUtils.degToRad(obj.rotation[0]), THREE.MathUtils.degToRad(obj.rotation[1]), THREE.MathUtils.degToRad(obj.rotation[2]), 'XYZ')));
+          mesh.receiveShadow = true;
+          mesh.castShadow = true;
+          this.scene.add(mesh);
+          body = new CANNON.Body({
+            mass: obj.mass,
+            shape: new CANNON.Sphere(obj.size.x / 2),
+            type: obj.syncdirection && CANNON.Body.DYNAMIC || CANNON.Body.STATIC,
             position: new CANNON.Vec3(obj.position.x, obj.position.y, obj.position.z),
-            quaternion: new CANNON.Quaternion().copy(new THREE.Quaternion().setFromEuler(new THREE.Euler(THREE.MathUtils.degToRad(obj.rotation[0]), THREE.MathUtils.degToRad(obj.rotation[1]), THREE.MathUtils.degToRad(obj.rotation[2]),'XYZ')))
+            quaternion: new CANNON.Quaternion().copy(mesh.quaternion)
           });
-          this.CannonWorld.addBody(border);
-          break;
-        case 'light':
-          let type = light.type
-          if(type == 'DirectionalLight'){
+          body.syncdirection = obj.syncdirection;
+          this.CannonWorld.addBody(body);
 
-          }
-          break;
-        case 'obstacle':
-          let obstacle
-          switch (obj.subType) {
-            case 'spinner':
-              //position, size, mass, type, motor, speed
-              new SpinnerObstacle(obj.position, obj.size, obj.mass, obj.subsubType, obj.motorEnabled, obj.speed);
-              break;
-            case 'moving':
-              obstacle = new MovingObstacle(obj.subsubType, obj.position,obj.size, obj.mass, obj.options);
-              this.world.addSystem(obstacle);
-              break;
-            case 'obstacle':
-              new Obstacle(obj.subsubType, obj.position, obj.size, obj.mass.obj.geometry, obj.body);
-              break;
-            default:
-              console.warn(obj.type + " is not a valid object subtype");
-          }
-          if(obstacle){
-            const mat = Game.materials.three[obj.shader];
-            obstacle.threeMesh.material = mat
-          }
-          break;
-        default: {
-          console.warn(obj.type + " is not a valid object type");
+          new SyncedMesh(mesh, body, true, obj.syncdirection);
+        } else {
+          console.warn(obj.shape + " is not a valid object shape");
         }
+        break;
+      case 'hidden':
+        if (obj.shape == 'box') {
+          body = new CANNON.Body({
+            mass: obj.mass,
+            shape: new CANNON.Box(new CANNON.Vec3(obj.size.x / 2, obj.size.y / 2, obj.size.z / 2)),
+            type: CANNON.Body.DYNAMIC,
+            position: new CANNON.Vec3(obj.position.x, obj.position.y, obj.position.z),
+            quaternion: new CANNON.Quaternion().copy(new THREE.Quaternion().setFromEuler(new THREE.Euler(THREE.MathUtils.degToRad(obj.rotation[0]), THREE.MathUtils.degToRad(obj.rotation[1]), THREE.MathUtils.degToRad(obj.rotation[2]), 'XYZ')))
+          });
+          this.CannonWorld.addBody(body);
+
+        } else if (obj.shape == "sphere") {
+          body = new CANNON.Body({
+            mass: obj.mass,
+            shape: new CANNON.Sphere(obj.size.x / 2),
+            type: CANNON.Body.DYNAMIC,
+            position: new CANNON.Vec3(obj.position.x, obj.position.y, obj.position.z),
+            quaternion: new CANNON.Quaternion().copy(new THREE.Quaternion().setFromEuler(new THREE.Euler(THREE.MathUtils.degToRad(obj.rotation[0]), THREE.MathUtils.degToRad(obj.rotation[1]), THREE.MathUtils.degToRad(obj.rotation[2]), 'XYZ')))
+          });
+          this.CannonWorld.addBody(body);
+
+        } else {
+          console.warn(obj.shape + " is not a valid object shape");
+        }
+        break;
+      case 'visual': {
+        if (obj.shape == 'box') {
+          const geo = new THREE.BoxGeometry();
+          const mat = this.materials.three[obj.shader];
+          mesh = new THREE.Mesh(geo, mat);
+          mesh.scale.set(obj.size.x, obj.size.y, obj.size.z);
+          mesh.position.set(obj.position.x, obj.position.y, obj.position.z);
+          obj.rotation = obj.rotation ? obj.rotation : [0, 0, 0];
+          mesh.quaternion.copy(new THREE.Quaternion().setFromEuler(new THREE.Euler(THREE.MathUtils.degToRad(obj.rotation[0]), THREE.MathUtils.degToRad(obj.rotation[1]), THREE.MathUtils.degToRad(obj.rotation[2]), 'XYZ')));
+          mesh.receiveShadow = true;
+          mesh.castShadow = true;
+
+          this.scene.add(mesh);
+        } else {
+          console.warn(obj.shape + " is not a valid object shape");
+        }
+        break;
       }
+      case 'sync-poly': {
+        const geo = new THREE.BufferGeometry();
+        // let verts = new Float32Array(obj.verts)
+        // let indices = obj.indices
+        // let verts, indices;
+        let trimesh;
+        let tverts = [], cverts = [], uvs;
+        if (obj.shape == 'tri') {
+          tverts = new Float32Array(obj.verts);
+          // cverts = obj.verts
+          // indices = [0,1,2]
+          cverts = obj.verts;
+
+          for (let i = 0; i < obj.verts.length; i++) {
+            obj.verts[i] *= 2;
+          }
+          trimesh = new CANNON.Trimesh(obj.verts, obj.indices);
+        } else if (obj.shape == 'quad') {
+          for (let i = 0; i < obj.verts.length; i++) {
+            tverts.push(obj.verts[i].toFixed(5));
+          }
+          uvs = [];
+          obj.verts.forEach((v, i) => (i % 3 != 1 && uvs.push(v)));
+          const min = Math.min.apply(null, uvs);
+          uvs = uvs.map(v => v - min);
+          const max = Math.max.apply(null, uvs);
+          uvs = uvs.map(v => v / max);
+          uvs = new Float32Array(uvs);
+          tverts = new Float32Array(tverts);
+          for (let i = 0; i < obj.verts.length; i++) {
+            obj.verts[i] *= 2;
+          }
+          trimesh = new CANNON.Trimesh(obj.verts, obj.indices);
+        } else if (obj.shape == 'torus') {
+          trimesh = CANNON.Trimesh.createTorus(10, 3.5, 5, 5);
+        }
+
+        geo.setAttribute('position', new THREE.BufferAttribute(tverts, 3));
+        geo.setAttribute('uv', new THREE.BufferAttribute(uvs, 2));
+        geo.setIndex(obj.indices);
+        const mat = this.materials.three[obj.shader];
+        mat.side = THREE.DoubleSide;
+        mesh = new THREE.Mesh(geo, mat);
+        mesh.position.set(obj.position.x, obj.position.y, obj.position.z);
+        obj.rotation = obj.rotation ? obj.rotation : [0, 0, 0];
+        mesh.quaternion.copy(new THREE.Quaternion().setFromEuler(new THREE.Euler(THREE.MathUtils.degToRad(obj.rotation[0]), THREE.MathUtils.degToRad(obj.rotation[1]), THREE.MathUtils.degToRad(obj.rotation[2]))));
+
+        this.scene.add(mesh);
+
+
+        trimesh.setScale(new CANNON.Vec3(obj.size.x / 2, obj.size.y / 2, obj.size.z / 2));
+        const body = TrimeshToPolyhedron(trimesh, new CANNON.Vec3(0, 1, 0));
+        body.type = CANNON.Body.KINEMATIC;
+        body.mass = 10;
+        body.position.copy(obj.position);
+        body.quaternion.copy(mesh.quaternion);
+        this.CannonWorld.addBody(body);
+        new SyncedMesh(mesh, body);
+
+        // console.log(body,mesh)
+      } break;
+      case "checkpoint": {
+        const geo = new THREE.BoxGeometry();
+        const mat = this.materials.three[obj.shader];
+        mesh = new THREE.Mesh(geo, mat);
+        mesh.scale.set(obj.size.x, obj.size.y, obj.size.z);
+        mesh.position.set(obj.position.x, obj.position.y, obj.position.z);
+        this.scene.add(mesh);
+
+        body = new CANNON.Body({
+          mass: obj.mass,
+          shape: new CANNON.Box(new CANNON.Vec3(obj.size.x / 2, obj.size.y / 2, obj.size.z / 2)),
+          type: CANNON.Body.STATIC,
+          // isTrigger: true,
+          position: new CANNON.Vec3(obj.position.x, obj.position.y, obj.position.z),
+          quaternion: new CANNON.Quaternion().copy(mesh.quaternion)
+        });
+        this.CannonWorld.addBody(body);
+
+        body.addEventListener("collide", function (e) {
+          Game.character.checkPoint = obj.pointnumber;
+        });
+
+        new SyncedMesh(mesh, body);
+
+        this.checkPoints[obj.pointnumber] = mesh;
+      } break;
+      case "constraint": {
+        const objectA = this._fetchObject(obj.bodyA);
+        const objectB = this._fetchObject(obj.bodyB);
+        const constraint = new CANNON.PointToPointConstraint(objectA.body, obj.pivotA, objectB.body, obj.pivotB);
+        this.CannonWorld.addConstraint(constraint);
+      } break;
+      case 'border':
+        body = new CANNON.Body({
+          mass: 0,
+          shape: new CANNON.Box(new CANNON.Vec3(obj.size.x / 2, obj.size.y / 2, obj.size.z / 2)),
+          type: CANNON.Body.STATIC,
+          position: new CANNON.Vec3(obj.position.x, obj.position.y, obj.position.z),
+          quaternion: new CANNON.Quaternion().copy(new THREE.Quaternion().setFromEuler(new THREE.Euler(THREE.MathUtils.degToRad(obj.rotation[0]), THREE.MathUtils.degToRad(obj.rotation[1]), THREE.MathUtils.degToRad(obj.rotation[2]), 'XYZ')))
+        });
+        this.CannonWorld.addBody(body);
+        break;
+      case 'light':
+        let type = light.type;
+        if (type == 'DirectionalLight') {
+
+        }
+        break;
+      case 'obstacle':
+        let obstacle;
+        switch (obj.subType) {
+          case 'spinner':
+            //position, size, mass, type, motor, speed
+            new SpinnerObstacle(obj.position, obj.size, obj.mass, obj.subsubType, obj.motorEnabled, obj.speed);
+            break;
+          case 'moving':
+            obstacle = new MovingObstacle(obj.subsubType, obj.position, obj.size, obj.mass, obj.options);
+            this.world.addSystem(obstacle);
+            break;
+          case 'obstacle':
+            new Obstacle(obj.subsubType, obj.position, obj.size, obj.mass.obj.geometry, obj.body);
+            break;
+          default:
+            console.warn(obj.type + " is not a valid object subtype");
+        }
+        if (obstacle) {
+          const mat = Game.materials.three[obj.shader];
+          obstacle.threeMesh.material = mat;
+        }
+        break;
+      default: {
+        console.warn(obj.type + " is not a valid object type");
+      }
+    }
+    if (mesh && obj.opaque == 1) mesh.opaque = true;
+    if (obj.isconnected && body) body.isconnected = true;
+    return { mesh, body };
+  }
+  _convertCoordinates(object) {
+    for (let i in object) {
+      let child = object[i];
+      if (child.position) child.position = new THREE.Vector3(child.position[0], child.position[1], child.position[2]);
+      if (child.size) child.size = new THREE.Vector3(child.size[0], child.size[1], child.size[2]);
+      if (child.pivotA) child.pivotA = new THREE.Vector3(child.pivotA[0], child.pivotA[1], child.pivotA[2]);
+      if (child.pivotB) child.pivotB = new THREE.Vector3(child.pivotB[0], child.pivotB[1], child.pivotB[2]);
+      if (typeof (child) == 'object') {
+        this._convertCoordinates(child);
+      }
+    }
+  }
+  _fetchObject(uuid) {
+    if (this._loadedObjects[uuid]) {
+      return this._loadedObjects[uuid];
+    }
+    const index = getIndexWithPropertyValue(this._objectQueue, "uuid", uuid);
+    if (index == -1) return console.error("uuid: " + uuid + " is not present");
+    const obj = this._objectQueue[index];
+    this._objectQueue = this._objectQueue.filter((_, i) => i != index);
+    const props = GamEnum.objects.properties;
+    for (let prop in props) {
+      if (obj[prop] != null) continue;
+      if (prop == 'mass' || (prop == 'shader' && obj.type == 'border')) continue;
+      if (prop == 'shader') { obj.shader = 'default'; continue; }
+      if (prop == 'texture') { obj.texture = 'default'; continue; }
+      if (obj.type == "constraint" || prop == 'position' || prop == 'rotation' || prop == 'size') continue;
+      return console.warn("property " + prop + " of " + JSON.stringify(obj) + " should be type " + props[prop] + " but is " + typeof (obj[prop]));
+    }
+    const loadedObj = this._loadObject(obj);
+    this._loadedObjects[uuid] = loadedObj;
+    return loadedObj;
+  }
+  loadObjects(objects) {
+    this._objectQueue = objects;//JSON.parse(JSON.stringify(objects));
+    this._convertCoordinates(this._objectQueue);
+    // for (let i = 0; i < objects.length; i++) {
+    //   const obj = objects[i];
+    //   for (let prop in props) {
+    //     if (obj[prop] != null) continue;
+    //     if (prop == 'mass' || (prop == 'shader' && obj.type == 'border')) continue;
+    //     if (prop == 'shader') { obj.shader = 'default'; continue; }
+    //     if (prop == 'texture') { obj.shader = 'default'; continue; }
+    //     return console.warn("property " + prop + " of " + JSON.stringify(obj) + " should be type " + props[prop] + " but is " + typeof (obj[prop]));
+    //   }      
+    //   this._loadObject(obj)
+    // }
+    for (let i = 0; i < 10000; i++) {
+      if (this._objectQueue.length == 0) break;
+      const obj = this._objectQueue[this._objectQueue.length - 1];
+      if (!obj.uuid) console.error("no uuid provided" + JSON.stringify(obj));
+      // console.log(obj.uuid)
+      this._fetchObject(obj.uuid);
     }
   }
   loadModel(obj, attachPhysics = false) {
     const name = obj.model;
     if (this.imports.models[name] == undefined) return console.warn("Model " + name + " has not been imported");
-    let pos = obj.position//new THREE.Vector3().fromArray(obj.position || [0,0,0])
+    let pos = obj.position;
     let rot = obj.rotation || [0, 0, 0];
-    let size = obj.size.clone().multiplyScalar(0.5)//new THREE.Vector3().fromArray(obj.size || [1,1,1])
-    // obj.size.x /= 2, obj.size.y /= 2,obj.size.z /= 2
-    // if (!size || !size.isVector3) size = size && size.constructor == Array ? new THREE.Vector3().fromArray(obj.size) : new THREE.Vector3(1, 1, 1);
-    // console.log(obj)
+    let size = obj.size.clone().multiplyScalar(0.5);
     const group = Game.imports.models[name];
-    // console.log(group);
 
     const mesh = SkeletonUtils.clone(group.scene.getObjectByName('mesh'));
-    // if(obj.model == "board"){
-    //   let data = {}
-    //   for(let i in mesh.material){
-    //     if(typeof(mesh.material[i]) != "object")data[i] = mesh.material[i]
-    //   }
-    //   // console.log(data)
-    // }
     mesh.scale.set(size.x, size.y, size.z);
-    // console.log(mesh.scale)
     mesh.position.set(pos.x, pos.y, pos.z);
     mesh.quaternion.setFromEuler(new THREE.Euler(THREE.MathUtils.degToRad(rot[0]), THREE.MathUtils.degToRad(rot[1]), THREE.MathUtils.degToRad(rot[2])));
-    mesh.receiveShadow = true
-    mesh.castShadow = true
-    // mesh.geometry.applyQuaternion(new THREE.Quaternion().setFromEuler())
+    //add SHADOW PROPERTY on obj for importing?
+    // if(mesh.material && mesh. material.type != "MeshStandardMaterial"){
+    mesh.receiveShadow = true;
+    mesh.castShadow = true;
+    if (mesh.material) mesh.material.side = 0;
+    // }
     let hull = mesh;
     if (group.scene.getObjectByName('hull')) {
       group.simplifyAmount = 0;
-      // hull = SkeletonUtils.clone(group.scene.getObjectByName('hull'));
       hull = group.scene.getObjectByName('hull');
     }
-    // console.log(hull,obj.model)
     // const { shape } = rigToConvexHull(hull, false, group.simplifyAmount);
     //PRVENTS ABSOLUTE DIE __below__ , ya i Really don't know why, but it works. So it Works.
-    function iter(bone){
-      for (let i in bone.children){
-        const kid = bone.children[i]
-        if (kid.isBone){
-          kid.getWorldPosition(new THREE.Vector3())
-          iter(kid)
+    function iter(bone) {
+      for (let i in bone.children) {
+        const kid = bone.children[i];
+        if (kid.isBone) {
+          kid.getWorldPosition(new THREE.Vector3());
+          iter(kid);
         }
       }
     }
-    iter(mesh)
-    mesh.animations = {}
-    for(let i in group.animations){
-      let animation = group.animations[i]
-      mesh.animations[animation.name.toLowerCase()] = animation
+    iter(mesh);
+    mesh.animations = {};
+    for (let i in group.animations) {
+      let animation = group.animations[i];
+      mesh.animations[animation.name.toLowerCase()] = animation;
     }
     if (attachPhysics) {
-      // const body = new CANNON.Body({
-      //   mass: obj.mass,
-      //   shape: shape,
-      //   position: new CANNON.Vec3(obj.position.x, obj.position.y, obj.position.z),
-      //   quaternion: new CANNON.Quaternion().copy(mesh.quaternion)
-      // });
-      // console.log(size,obj)
-      const body = getCompoundHull(hull,this.debug,size);//,mesh);
-      body.mass = obj.mass
-      body.updateMassProperties()
-      body.type = CANNON.Body.DYNAMIC
-      body.material = this.materials.cannon[obj.material],
-      body.position = new CANNON.Vec3(pos.x, pos.y, pos.z),
-      body.quaternion = new CANNON.Quaternion().copy(mesh.quaternion)
+
+      const body = getCompoundHull(hull, this.debug, size);//,mesh);
+      body.mass = obj.mass;
+      body.updateMassProperties();
+      body.type = CANNON.Body.DYNAMIC;
+      body.material = this.materials.cannon[obj.material];
+      body.position = new CANNON.Vec3(pos.x, pos.y, pos.z);
+      body.quaternion = new CANNON.Quaternion().copy(mesh.quaternion);
 
       this.CannonWorld.addBody(body);
       this.scene.add(mesh);
@@ -519,18 +747,31 @@ class GameLoader {
     }
     return { mesh };
   }
+  getConnectedObjects() {
+    const objs = [];
+    let obj;
+    for (let uuid in this._loadedObjects) {
+      obj = this._loadedObjects[uuid];
+      if (!obj.body) continue;
+      if (obj.body.type == CANNON.Body.STATIC) continue;
+      if (obj.body.syncdirection || obj.body.isconnected) {
+        objs[uuid] = obj.body;
+      }
+    }
+    return objs;
+  }
   initCore() {
     this.CannonWorld = new CANNON.World();
     this.CannonWorld.gravity.set(0, -20, 0);
     this.camera = this.world.camera;
     this.scene = this.world.scene;
 
-    
+
 
     this.character = {};
 
     // renderer.outputEncoding = THREE.sRGBEncoding;
-    
+
 
 
 
@@ -544,27 +785,30 @@ class GameLoader {
       new THREE.DataTexture(new Uint8Array([255, 255, 255, 255]), 1, 1)
     ]);
     this.world.renderer.shadowMap.enabled = true;
-    this.world.renderer.shadowMap.type = THREE.PCFSoftShadowMap
+    this.world.renderer.shadowMap.type = THREE.PCFSoftShadowMap;
     // this.world.renderer.physicallyCorrectLights = true
-    let light
-    light = new THREE.AmbientLight(0x404040);
+    let light;
+    light = new THREE.AmbientLight(0xffffff);
     light.intensity = 0.4;
     this.scene.add(light);
-    light = new THREE.PointLight( 0xffffff, 1 );
+    light = new THREE.PointLight(0xffffff, 1);
     // light.bais = 0.1
     // console.log(light)
-    light.position.set( 0, 10, 0 ); //default; light shining from top
+    light.position.set(0, 10, 0); //default; light shining from top
     light.castShadow = true; // default false
     this.world.renderer.toneMapping = THREE.ReinhardToneMapping;
-    light.shadow.camera.near    =   1;
-    light.shadow.camera.far     =   40;
-    light.shadow.camera.right   =   -20;
-    light.shadow.camera.left    =  -20;
-    light.shadow.camera.top     =   20;
-    light.shadow.camera.bottom  =  -20;
-    light.shadow.mapSize.width  = 1024;
-    light.shadow.mapSize.height = 1024;
-    this.scene.add(light)
+    light.shadow.camera.near = 1;
+    light.shadow.camera.far = 40;
+    light.shadow.camera.right = -20;
+    light.shadow.camera.left = -20;
+    light.shadow.camera.top = 20;
+    light.shadow.camera.bottom = -20;
+    light.shadow.mapSize.width = 2560;
+    light.shadow.mapSize.height = 2560;
+    light.shadow.radius = 10;
+    // light.shadow.bias = -0.0010
+    // light.shadow.normalBias = 0.01
+    this.scene.add(light);
     // light = new THREE.PointLight( 0xffffff, 1 );
     // light.shadow.camera.near    =   10;
     // light.shadow.camera.far     =   20000;
@@ -583,10 +827,10 @@ class GameLoader {
     // light.shadow.camera.far = 500; // default
     // const helper = new THREE.CameraHelper( light.shadow.camera );
     // this.scene.add( helper );
-    
+
     // this.scene.add( light );
     tmpCubeTexture.needsUpdate = true;
-    // this.scene.background = tmpCubeTexture;
+    this.scene.background = tmpCubeTexture;
     //end load scene stuff
 
 
@@ -642,7 +886,8 @@ class MeshSyncSet extends Set {
 var myMeshes = new MeshSyncSet();
 class SyncedMesh {
   constructor(Mesh, CObj, enabled = true, direction = true, foo, quat = true) {
-
+    if (Mesh == undefined) return console.error("Mesh " + JSON.stringify(Mesh) + " is undefined");
+    if (CObj == undefined) return console.error("Body " + JSON.stringify(CObj) + " is undefined");
     this.ThreeMesh = Mesh;
     this.CannonMesh = CObj;
     this.enabled = (enabled != null && enabled);
@@ -720,8 +965,8 @@ class MovingObstacle extends Obstacle {
     super(type, position, size, mass);
     // this.cannonBody.material = CollisionMaterials.ground;
     this.cannonBody.type = CANNON.Body.STATIC;
-    if(options && options.offset && options.offset.constructor == Array && options.offset.length ==3){
-      options.offset = new CANNON.Vec3().set(...options.offset)
+    if (options && options.offset && options.offset.constructor == Array && options.offset.length == 3) {
+      options.offset = new CANNON.Vec3().set(...options.offset);
     }
     if (options) {
       Object.setPrototypeOf(options, {
@@ -736,14 +981,14 @@ class MovingObstacle extends Obstacle {
       this.offset = options.offset;
       this.speed = options.speed;
       this.totalTime = options.totaltime;
-      this.elapsedTime = 0
-      
+      this.elapsedTime = 0;
+
     }
   }
-  step(dt){
-    this.elapsedTime += dt
+  step(dt) {
+    this.elapsedTime += dt;
     let dfraction = (this.elapsedTime) % this.totalTime / this.totalTime;
-    dfraction = dfraction*2-(2*dfraction-1)*(2*Math.floor(dfraction*2))
+    dfraction = dfraction * 2 - (2 * dfraction - 1) * (2 * Math.floor(dfraction * 2));
     // const deltaoffset = new CANNON.Vec3()
     let offset;
     let rads;
@@ -886,35 +1131,41 @@ function rigToConvexHull(mesh, correctPos, simplifyAmount = 0.875) {
 
 }
 
-function getCompoundHull(hull,linkto,scale = new THREE.Vector3(1,1,1)) {
+function getCompoundHull(hull, linkto, scale = new THREE.Vector3(1, 1, 1)) {
   const data = hull.userData;
   const body = new CANNON.Body();
   let meshParent;
-  let dims, type, shape;
+  let dims, type, shape, quat;
 
-  if(linkto)meshParent = new THREE.Object3D()
-
+  if (linkto) meshParent = new THREE.Object3D();
+  let radians = 0;
+  Object.entries(data).forEach((a) => { radians = Math.abs(maxmag(radians, a[3], a[4], a[5])); });
+  radians = radians < 7 ? true : false;
   for (let name in data) {
     type = (name.search('sphere') > -1 && 'sphere') || (name.search('cube') > -1 && 'cube');
-    if(!type)continue;
+    if (!type) continue;
     // console.log(data[name],data[name][0])
-    for(let i in data[name]){
-      if(isNaN(data[name][i])){
-        console.error("import has corrupted values: " + i + " of " + name)
-        console.warn(hull)
+    for (let i in data[name]) {
+      if (isNaN(data[name][i])) {
+        console.error("import has corrupted values: " + i + " of " + name);
+        console.warn(hull);
       }
     }
     dims = [...data[name]];
-    for(let i in dims){
-      if(i == 3 || i == 4 || i == 5)continue;
-      dims[i] = dims[i]*scale.toArray()[i%3]
+    for (let i in dims) {
+      if (i == 3 || i == 4 || i == 5) continue;
+      dims[i] = dims[i] * scale.toArray()[i % 3];
     }
-    shape = type == 'sphere'? new CANNON.Sphere(dims[6]) : new CANNON.Box(new CANNON.Vec3(dims[6],dims[7],dims[8]))
-    body.addShape(shape,new CANNON.Vec3(dims[0],dims[1],dims[2]),new THREE.Quaternion().setFromEuler(new THREE.Euler(dims[3],dims[4],dims[5],'XYZ')))
-    if(linkto){
-      const geo = type == 'sphere'? new THREE.SphereGeometry(dims[6]) : new THREE.BoxGeometry(dims[6]*2,dims[7]*2,dims[8]*2)
-      const mesh = new THREE.Mesh(geo,Game.materials.three.default)
-      mesh.quaternion.copy(new THREE.Quaternion().setFromEuler(new THREE.Euler(dims[3],dims[4],dims[5],'XYZ')));
+    shape = type == 'sphere' ? new CANNON.Sphere(dims[6]) : new CANNON.Box(new CANNON.Vec3(dims[6], dims[7], dims[8]));
+    // const rotmax = (Math.abs(dims[3]),Math.abs(dims[4]),Math.abs(dims[5]))
+    // quat = radians?new THREE.Quaternion().setFromEuler(new THREE.Euler(dims[3], dims[4], dims[5], 'XYZ')):new THREE.Quaternion().setFromEuler(new THREE.Euler(THREE.MathUtils.degToRad(dims[3]), THREE.MathUtils.degToRad(dims[4]), THREE.MathUtils.degToRad(dims[5])))//(rotmax > 7)? new THREE.Quaternion().setFromEuler(new THREE.Euler(THREE.MathUtils.degToRad(dims[3]), THREE.MathUtils.degToRad(dims[4]), THREE.MathUtils.degToRad(dims[5]), 'XYZ')):new THREE.Quaternion().setFromEuler(new THREE.Euler(dims[3], dims[4], dims[5], 'XYZ'))
+    quat = new THREE.Quaternion().setFromEuler(new THREE.Euler(THREE.MathUtils.degToRad(dims[3]), THREE.MathUtils.degToRad(dims[4]), THREE.MathUtils.degToRad(dims[5])));
+    body.addShape(shape, new CANNON.Vec3(dims[0], dims[1], dims[2]), new CANNON.Quaternion().copy(quat));
+    if (linkto) {
+      const geo = type == 'sphere' ? new THREE.SphereGeometry(dims[6]) : new THREE.BoxGeometry(dims[6] * 2, dims[7] * 2, dims[8] * 2);
+      const mesh = new THREE.Mesh(geo, Game.materials.three.default);
+      mesh.quaternion.copy(quat);
+      // mesh.quaternion.copy(new THREE.Quaternion().setFromEuler(new THREE.Euler(dims[3], dims[4], dims[5], 'XYZ')));
       // mesh.applyMatrix4(new THREE.Matrix4().compose(new THREE.Vector3(dims[0],dims[1],dims[2]),new THREE.Quaternion().setFromEuler(new THREE.Euler(dims[3],dims[4],dims[5])),new THREE.Vector3(1,1,1)));
       // const pos = mesh.geometry.attributes.position
       // for(let i = 0; i < pos.count;i++){
@@ -922,15 +1173,15 @@ function getCompoundHull(hull,linkto,scale = new THREE.Vector3(1,1,1)) {
       //   pos.array[i*3+1] += dims[1]
       //   pos.array[i*3+2] += dims[2]
       // }
-      mesh.position.set(dims[0],dims[1],dims[2])
-      meshParent.add(mesh)
+      mesh.position.set(dims[0], dims[1], dims[2]);
+      meshParent.add(mesh);
     }
   }
-  if(linkto){
-    Game.scene.add(meshParent)
-    new SyncedMesh(meshParent,body)
+  if (linkto) {
+    Game.scene.add(meshParent);
+    new SyncedMesh(meshParent, body);
   }
-  return body
+  return body;
 }
 
 
@@ -973,5 +1224,32 @@ function TrimeshToPolyhedron(trimesh, upvector) {
   return body;
 }
 
+function getObjectsWithProperty(object, name) {
+  let result = [];
+  if (object[name] != undefined) result.push(object);
+  for (let i = 0, l = object.children.length; i < l; i++) {
+    const childResult = getObjectsWithProperty(object.children[i], name);
+    if (childResult.length > 0) {
+      result = result.concat(childResult);
+    }
+  }
+  return result;
+}
+
+function getIndexWithPropertyValue(object, property, value) {
+  for (let i in object) {
+    if (object[i][property] && object[i][property] == value) return i;
+  }
+  return -1;
+}
+
+const maxmag = (...numbers) => {
+  let largest = 0;
+  let i;
+  for (i = 1; i < numbers.length; i++) {
+    if (Math.abs(numbers[i]) > Math.abs(numbers[largest])) largest = i;
+  }
+  return numbers[largest];
+};
 
 export { GameLoader };

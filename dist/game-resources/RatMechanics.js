@@ -1,16 +1,19 @@
-import { Vector3, Quaternion,Euler, Matrix4, Object3D, DirectionalLightHelper, AnimationMixer, DirectionalLight, PointLight, CameraHelper} from "https://unpkg.com/three@0.141.0/build/three.module.js";
-import * as CANNON from 'https://pmndrs.github.io/cannon-es/dist/cannon-es.js';
+import { Vector3, Quaternion,Euler, Matrix4, Object3D, DirectionalLightHelper, AnimationMixer, DirectionalLight, PointLight, CameraHelper} from "three";
+import * as CANNON from 'cannon';
 
-import { IKSolver } from './IKSolver.js'
+// import { IKSolver } from './IKSolver.js'
 
 //CENTER RAT IN BLENDER!!!
 class RatMechanics{
-  constructor(loader,scene,info,character){
-    this.loader = loader
-    this.world = loader.world
-    this.ThirdPerson = false
-    this.scene = scene
-    this.info = info
+  constructor(loader,character){
+    if(loader){
+      this.world = loader.world;
+      this.isCurrentCharacter = true;
+      this.isConnectedCharacter = false;
+    }else{
+      this.isCurrentCharacter = false;
+      this.isConnectedCharacter = true;
+    }
     this.character = character
     this.mesh = character.mesh
     this.body = character.body
@@ -19,7 +22,7 @@ class RatMechanics{
     // console.log(skin,this.mesh)
     skin.receiveShadow = false
     skin.castShadow = true
-
+    character.wallClimbing = true;
     // let light = new PointLight( 0xffffff, 1 );
     // light.position.set(0,0,0)
     // // console.log(light)
@@ -51,36 +54,29 @@ class RatMechanics{
     // this.world.addSystem(ikSolver)
 
 
-    this.armInfo = {
-      animScale : 0.4,
-      xOffset : 0.3,
-      zOffset : 0.5,
-      yOffset : 0
-    }
-    this.legInfo = {
-      animScale : 1,
-      xOffset : 0.3,
-      zOffset : 0.5,
-      yOffset : -0.5
-    }
-    this.animSpeed = 2
-    this.fading = false
+    // this.armInfo = {
+    //   animScale : 0.4,
+    //   xOffset : 0.3,
+    //   zOffset : 0.5,
+    //   yOffset : 0
+    // }
+    // this.legInfo = {
+    //   animScale : 1,
+    //   xOffset : 0.3,
+    //   zOffset : 0.5,
+    //   yOffset : -0.5
+    // }
+    // this.animSpeed = 2
+    // this.fading = false
 
-    this.origDamping = [this.body.linearDamping,this.body.angularDamping]
     
-    // console.log(character)
-
-    this.elapsedTime = 0
-    this.animate = true
-    this.recoveryDelay = 1
-    this.recoveryTime = 0.5
-    this.cushionTime = 1
 
     // this.world.InputTable.a = null
     // this.world.InputTable.d = null
 
-    this.timeOnGround = 0
-    this.timeOffGround = 0
+    
+
+    this._animationListeners = []
 
     const mesh = character.mesh
     this.animations = {}
@@ -89,45 +85,58 @@ class RatMechanics{
       this.animations[name] = this.animMixer.clipAction(mesh.animations[name])
     }
     // console.log(this.animations)
-    this.animStatus = 'idle'
-    this.currentAnimation = this.animations[this.animStatus].play()
-    this.CannonWorld = this.loader.CannonWorld
-    const self = this
-    this.loader.gameLoading.then(()=>{
-      self.ThirdPerson = self.world.mechanics.ThirdPerson
-      if(!self.ThirdPerson){
-        self.mesh.visible = false
-      }
-    })
-  }
-  updateQuads(){
-    const armInfo = this.armInfo
-    const legInfo = this.legInfo
+    this.updateAnimation({status: 'idle'})
+    // this.CannonWorld = this.loader.CannonWorld
+    // const self = this
+    // this.loader.gameLoading.then(()=>{
+    //   self.ThirdPerson = self.world.mechanics.ThirdPerson
+    //   if(!self.ThirdPerson){
+    //     self.mesh.visible = false
+    //   }
+    // })
+    if(this.isCurrentCharacter){
+      this.origDamping = [this.body.linearDamping,this.body.angularDamping]
+      this.timeOnGround = 0
+      this.timeOffGround = 0
+      // console.log(character)
+  
+      // this.elapsedTime = 0
+      // this.animate = true
+      this.recoveryDelay = 1
+      this.recoveryTime = 0.5
+      this.cushionTime = 1
 
-    let angle = (this.elapsedTime*this.animSpeed*-1)%(Math.PI*2)
-    let xAngle = Math.sin(angle)
-    let zAngle = clamp(-1,0,Math.cos(angle))
-    this.armJointL.endPosition = new Vector3(0,xAngle,zAngle).multiplyScalar(armInfo.animScale).add(new Vector3(armInfo.xOffset,armInfo.yOffset,armInfo.zOffset)) 
-    xAngle = clamp(0,1,xAngle)
-    zAngle = Math.cos(angle)
-    this.legJointR.endPosition = new Vector3(0,xAngle,zAngle).multiplyScalar(legInfo.animScale).add(new Vector3(legInfo.xOffset*-1,legInfo.yOffset,legInfo.zOffset)) 
+      this.floatPower = 0.1
+    }
+  }
+  // updateQuads(){
+  //   const armInfo = this.armInfo
+  //   const legInfo = this.legInfo
+
+  //   let angle = (this.elapsedTime*this.animSpeed*-1)%(Math.PI*2)
+  //   let xAngle = Math.sin(angle)
+  //   let zAngle = clamp(-1,0,Math.cos(angle))
+  //   this.armJointL.endPosition = new Vector3(0,xAngle,zAngle).multiplyScalar(armInfo.animScale).add(new Vector3(armInfo.xOffset,armInfo.yOffset,armInfo.zOffset)) 
+  //   xAngle = clamp(0,1,xAngle)
+  //   zAngle = Math.cos(angle)
+  //   this.legJointR.endPosition = new Vector3(0,xAngle,zAngle).multiplyScalar(legInfo.animScale).add(new Vector3(legInfo.xOffset*-1,legInfo.yOffset,legInfo.zOffset)) 
     
-    angle = (this.elapsedTime*this.animSpeed*-1)%(Math.PI*2)+Math.PI
-    xAngle = Math.sin(angle)
-    zAngle = clamp(-1,0,Math.cos(angle))
-    this.armJointR.endPosition = new Vector3(0,xAngle,zAngle).multiplyScalar(armInfo.animScale).add(new Vector3(armInfo.xOffset*-1,armInfo.yOffset,armInfo.zOffset))
-    xAngle = clamp(0,1,xAngle)
-    zAngle = Math.cos(angle)
-    this.legJointL.endPosition = new Vector3(0,xAngle,zAngle).multiplyScalar(legInfo.animScale).add(new Vector3(legInfo.xOffset,legInfo.yOffset,legInfo.zOffset)) 
+  //   angle = (this.elapsedTime*this.animSpeed*-1)%(Math.PI*2)+Math.PI
+  //   xAngle = Math.sin(angle)
+  //   zAngle = clamp(-1,0,Math.cos(angle))
+  //   this.armJointR.endPosition = new Vector3(0,xAngle,zAngle).multiplyScalar(armInfo.animScale).add(new Vector3(armInfo.xOffset*-1,armInfo.yOffset,armInfo.zOffset))
+  //   xAngle = clamp(0,1,xAngle)
+  //   zAngle = Math.cos(angle)
+  //   this.legJointL.endPosition = new Vector3(0,xAngle,zAngle).multiplyScalar(legInfo.animScale).add(new Vector3(legInfo.xOffset,legInfo.yOffset,legInfo.zOffset)) 
 
-    // const offset = this.body.position.vsub(this.armJointL.chain[0].bone.getWorldPosition(new Vector3()))
-    // this.body.shapeOffsets[2].copy(offset)
-    // this.ray = new Ray(new Vector3(),new Vector3())
-    // this.raycastResult = new RaycastResult()
-    // this.rayOptions = {}
-    // this.rayCasting = false
-  }
-  updateTransforms(delta){
+  //   // const offset = this.body.position.vsub(this.armJointL.chain[0].bone.getWorldPosition(new Vector3()))
+  //   // this.body.shapeOffsets[2].copy(offset)
+  //   // this.ray = new Ray(new Vector3(),new Vector3())
+  //   // this.raycastResult = new RaycastResult()
+  //   // this.rayOptions = {}
+  //   // this.rayCasting = false
+  // }
+  updateTransforms(){
     // this.ray.to.copy(this.body.position)
     // this.ray.from.copy(this.body.position.vadd(new Vec3(0,-5,0)))
 
@@ -150,16 +159,18 @@ class RatMechanics{
       this.body.angularVelocity.normalize()
       this.body.linearDamping = 0
       this.body.angularDamping = 0.5
-      this.previousAnimStatus = this.animStatus
+      let status;      
       if(!this.character.walking){
         this.body.velocity.set(0,this.body.velocity.y,0)
-        this.animStatus = 'idle'
+        status = 'idle'
       }else{
-        this.animStatus = 'walk'
+        status = 'walk'
+        this.body.velocity.y += this.floatPower
         if(this.world.InputTable["shift"]){
-          this.animStatus = 'run'
+          status = 'run'
         }
       }
+      this.updateAnimation({status})
       if(!cushioned)this.timeOffGround = 0
       if(this.ragdoll)this.lastQuat = new CANNON.Quaternion().copy(this.body.quaternion)
       this.ragdoll = false
@@ -179,16 +190,11 @@ class RatMechanics{
       // this.body.quaternion.copy(quat)
       // console.log(this.body.quaternion)
       // console.log(result.hitNormalWorld)
-      if(this.previousAnimStatus != this.animStatus && !this.fading){
-        for (let name in this.animations){
-          this.animations[name].stop()
-        }
-        this.currentAnimation = this.animations[this.animStatus]
-        this.currentAnimation.play()
-        this.currentAnimation.timeScale = 1
-        if (this.world.InputTable.s){
-          this.currentAnimation.timeScale = -1
-        }
+      
+      this.updateAnimation({timeScale: 1})
+      if (this.world.InputTable.s){
+        this.updateAnimation({timeScale: -1})
+      }
         // switch(this.animStatus){
         // case 'walking':
         //   if(this.currentAnimation.paused){
@@ -205,8 +211,7 @@ class RatMechanics{
         // case 'falling':
         //   break;
         // }
-      }
-      this.animMixer.update(delta)
+      // }
       
     }else if(!(result && result.hasHit)){
       // console.log("free physics")
@@ -234,15 +239,40 @@ class RatMechanics{
 
   //   // console.log(thing)
   // }
-
+  updateAnimation(update){
+    this.previousAnimStatus = this.animStatus;
+    this.previousTimeScale = (this.currentAnimation && this.currentAnimation.timeScale)
+    if(update.status)this.animStatus = update.status;
+    if(update.timeScale)this.currentAnimation.timeScale = update.timeScale;
+    if(this.previousAnimStatus != this.animStatus /*&& !this.fading)*/){
+      for (let name in this.animations){
+        this.animations[name].stop()
+      }
+      this.currentAnimation = this.animations[this.animStatus]
+      this.currentAnimation.play()
+    }
+    let changed = false;
+    if(this.previousAnimStatus != this.animStatus)changed = true;
+    if(this.previousTimeScale != (this.currentAnimation && this.currentAnimation.timeScale))changed = true;
+    for(let i in this._animationListeners){
+      this._animationListeners[i](update,this,changed)
+    }
+  }
+  addAnimationListener(callback){
+    this._animationListeners.push(callback)
+  }
   step(ms){
-    this.elapsedTime += ms
-    this.timeOnGround += ms
-    this.timeOffGround += ms
-    // if(this.animate)this.updateQuads()
-    this.updateTransforms(ms)
+    if(this.isCurrentCharacter){
+      this.elapsedTime += ms
+      this.timeOnGround += ms
+      this.timeOffGround += ms
+      // if(this.animate)this.updateQuads()
+      this.updateTransforms()
+    }
+    
     // this.body.quaternion.mutliply(new Quaternion().setFromEuler(new Euler(Math.PI/2,0,0)))
     // const rotation = this
+    this.animMixer.update(ms)
   }
 }
 

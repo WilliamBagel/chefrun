@@ -2,21 +2,22 @@
 
 <head>
   <title>Play ChefRun</title>
-    <link rel="stylesheet" href="./dist/play-style.css">
-    <link rel="icon" type="image/png" href="/assets/favicon.png">
+  <link rel="stylesheet" href="./dist/play-style.css">
+  <link rel="icon" type="image/png" href="/assets/favicon.png">
 </head>
 
 <body>
   <script type='importmap'>
-          {
-            "imports": {
-              "vue": "https://unpkg.com/vue@3.2.41/dist/vue.esm-browser.js",
-              "three": "https://unpkg.com/three@0.141.0/build/three.module.js"
-            }
-          }
-        </script>
+    {
+      "imports": {
+        "vue": "https://unpkg.com/vue@3.2.41/dist/vue.esm-browser.js",
+        "three": "https://unpkg.com/three@0.141.0/build/three.module.js",
+        "cannon": "https://pmndrs.github.io/cannon-es/dist/cannon-es.js"
+      }
+    }
+  </script>
   <!-- <script src="https://html2canvas.hertzen.com/dist/html2canvas.js"></script> -->
-  <script src="https://cdn.pubnub.com/sdk/javascript/pubnub.7.0.0.js"></script>
+  <!-- <script src="https://cdn.pubnub.com/sdk/javascript/pubnub.7.0.0.js"></script> -->
   <script src="https://cdn.socket.io/socket.io-3.0.5.min.js"></script>
   <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
   <!-- <script src=".\dist\play.vue"></script> -->
@@ -71,13 +72,15 @@
 
         <div class='gamecode-container lobby-top-child'><span class='gamecode' :code='GamecodeDisplay'></span></div>
         <select class='lobby-top-child' name="Character" @change="SetCharacter" v-model="Character">
-          <option value="Rat">Rat</option>
+          <!-- <option value="Rat">Rat</option> -->
           <option value="Banana">Banana</option>
-          <option value="Potato">Potato(needs fix)</option>
+          <option value="Potato">Potato</option>
           <option value="stove">Stove(because why not)</option>
           <option value="Strawberry">strawberry</option>
           <option value="watermelon">watermelon</option>
           <option value="SantaRat">santa?!?!?!</option>
+          <option value="pan">thing you fry stuff w/</option>
+          <option value="easter-egg">pretty eggo(easter update)</option> 
           <!-- <option value="squareWatermelon">Watermelon</option> -->
         </select>
       </div>
