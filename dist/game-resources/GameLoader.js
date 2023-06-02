@@ -1,7 +1,7 @@
 import * as THREE from "three";//"https://threejs.org/build/three.module.js"; 
 import * as CANNON from 'cannon';
-import * as SkeletonUtils from "/dependencies/SkeletonUtils.js";//"https://threejs.org/examples/jsm/utils/SkeletonUtils.js";
-import { GLTFLoader } from "/dependencies/GLTFLoader.js";//'https://threejs.org/examples/jsm/loaders/GLTFLoader.js';
+import * as SkeletonUtils from "/chefrun/dependencies/SkeletonUtils.js";//"https://threejs.org/examples/jsm/utils/SkeletonUtils.js";
+import { GLTFLoader } from "/chefrun/dependencies/GLTFLoader.js";//'https://threejs.org/examples/jsm/loaders/GLTFLoader.js';
 // import { ConvexGeometry } from 'https://unpkg.com/three@0.122.0/examples/jsm/geometries/ConvexGeometry.js';
 // import { SimplifyModifier } from 'https://threejs.org/examples/jsm/modifiers/SimplifyModifier.js';
 import { RatMechanics } from './RatMechanics.js';

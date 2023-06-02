@@ -8,7 +8,6 @@ class LerpController {
     if (mode == 'b') this.targets = [];
   }
   setTarget(target, target2) {
-    console.log(this.currentFrames);
     let tmpTarget = this.target;
     if (this.target || this.targets && this.targets.length > 0) {
       if (this.mode == 'p' || 'b') {
