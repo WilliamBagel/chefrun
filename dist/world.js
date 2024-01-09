@@ -27,6 +27,7 @@ class World {
       mouse: false,
       mousedelta: [0, 0],
       mousepos: [0, 0],
+      mousepercent: [0,0],
       w: false,
       a: false,
       s: false,
@@ -36,6 +37,7 @@ class World {
       shift: false,
       " ": false
     };
+    this._inputEventListeners = []
     this.mouseLocked = false;
 
     this.onGameLoad = []
@@ -46,6 +48,11 @@ class World {
       if (this.InputTable[key] != null) this.InputTable[key] = true;
     } else if (type == "UP") {
       if (this.InputTable[key] != null) this.InputTable[key] = false;
+    }
+    let obj
+    for(let i in this._inputEventListeners){
+      obj = this._inputEventListeners[i];
+      if(obj.key == "**")obj.callback();
     }
   }
   onMouseInput(type, e, itype, element) {
@@ -79,7 +86,13 @@ class World {
       this.InputTable.mousedelta[0] = e.movementX;//+= mdelta[0];
       this.InputTable.mousedelta[1] = e.movementY;//+= mdelta[1];
       this.InputTable.mousepos = mpos;
+      this.InputTable.mousepercent[0] = e.x/this.renderer.domElement.width
+      this.InputTable.mousepercent[1] = e.y/this.renderer.domElement.height
     }
+  }
+  addInputEventListener(key,callback){
+    if(key.length > 1 && key != "**")this.renderer.domElement.addEventListener(key,callback)
+    this._inputEventListeners.push({key,callback})
   }
   _animate(t) {
     requestAnimationFrame((t) => {
@@ -107,6 +120,10 @@ class World {
   }
   addSystem(system){
     this._systems.push(system)
+    this.updateSystems()
+  }
+  updateSystems(){
+    this.systems = this._systems.sort((system)=>system._stepPriority || 0)
   }
   remove(object) {
     this.scene.remove(object);
@@ -116,7 +133,7 @@ class World {
     const self = this;
     loader.gameLoading.then(()=>{
       if(self.initiatingGame){
-        this.mechanics = new GameMechanics(self)
+        this.loadMechanics()
       }
       for (let i in this.onGameLoad){
         this.onGameLoad[i]()
@@ -138,13 +155,16 @@ class World {
   addGameLoadListener(foo){
     this.onGameLoad.push(foo)
   }
+  loadMechanics(){
+    this.mechanics = new GameMechanics(this)
+    this.addSystem(this.mechanics)
+  }
   initGame(){
     if (this.gameLoaded){
-      this.mechanics = new GameMechanics(this)
+      this.loadMechanics()
     }else{
       this.initiatingGame = true
     }
-    
   }
 }
 

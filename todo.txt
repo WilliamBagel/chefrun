@@ -7,12 +7,9 @@
      |_|        |_______|     |____/    |_______|
 
 
-- more assets                     - 
-- fix duo_triple texture          
-- add roughness maps?             - add finish line
-- make assets look pretty         
-
-- make kitchen test /sandbox.html
+- more assets                     - add finish line
+- make assets look pretty         - make camera code more efficient
+- grab tool and tool locking      
 
 - maps: cutting board(intro) --> floor(start) --> kitchenware(middle) --> open vents(finish)
    __       __
@@ -26,6 +23,8 @@
    /_/     \_\
 
 
+- fix duo_triple texture
+- add roughness maps 
 - add character picking
 - add game lobbies, mostly ui, delay run until started by host
 - Export all assets with new order of rotation in compundhull.py, 'XZY'

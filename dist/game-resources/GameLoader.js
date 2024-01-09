@@ -13,7 +13,6 @@ const modelLoader = new GLTFLoader();
 const textureLoader = new THREE.TextureLoader();
 
 const StringTypes = { number: true, string: true, boolean: true, };
-var ThirdPerson = true;
 var Game;
 class GameLoader {
   constructor(game, world) {
@@ -48,9 +47,6 @@ class GameLoader {
       this.isLoaded = true;
       res();
     });
-  }
-  set onrender(foo) {
-    this.world._callOnRender.push(foo);
   }
   initCharacter(folder) {
     // const CannonWorld = this.CannonWorld

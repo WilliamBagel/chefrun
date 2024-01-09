@@ -1,8 +1,13 @@
 #connection-div {
+  display: none;
   margin: auto;
   width: 100%;
   border: 2px;
   border-style: solid;
   border-color: black;
   padding: 1%;
+}
+
+body{
+  margin: 0px;
 }
