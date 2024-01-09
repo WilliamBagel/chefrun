@@ -13,6 +13,7 @@ const modelLoader = new GLTFLoader();
 const textureLoader = new THREE.TextureLoader();
 
 const StringTypes = { number: true, string: true, boolean: true, };
+var ThirdPerson = true;
 var Game;
 class GameLoader {
   constructor(game, world) {
@@ -47,6 +48,9 @@ class GameLoader {
       this.isLoaded = true;
       res();
     });
+  }
+  set onrender(foo) {
+    this.world._callOnRender.push(foo);
   }
   initCharacter(folder) {
     // const CannonWorld = this.CannonWorld
@@ -785,7 +789,7 @@ class GameLoader {
     // this.world.renderer.physicallyCorrectLights = true
     let light;
     light = new THREE.AmbientLight(0xffffff);
-    light.intensity = 0.4;
+    light.intensity = 0.8;
     this.scene.add(light);
     light = new THREE.PointLight(0xffffff, 1);
     // light.bais = 0.1
@@ -829,6 +833,7 @@ class GameLoader {
     this.scene.background = tmpCubeTexture;
     //end load scene stuff
 
+    this.camera.near = 0.0001
 
   }
 }
