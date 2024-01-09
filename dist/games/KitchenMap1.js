@@ -29,7 +29,8 @@ var TestGame = {
       "top-corner-single-left": "TopCabinet_corner-single-left.glb",
       "top-solo-single-left": "TopCabinet_solo-single-left.glb",
       "easter-egg": "EasterEgg.glb",
-      "pan":"Pan.glb"
+      "pan":"Pan.glb",
+      "lantern": "NYLantern.glb"
     },
     images: {
       duck: 'duck.jpg',
@@ -371,6 +372,12 @@ var TestGame = {
         type: 'MeshPhongMaterial',
         settings: {
           map: "backroom"
+        }
+      },
+      string:{
+        type: 'MeshBasicMaterial',
+        settings:{
+          color: 0xf757af
         }
       }
     },
@@ -789,9 +796,9 @@ var TestGame = {
           -8.600000381469727
         ],
         "rotation": [
-          0,
-          0,
-          0
+          5.008956538086331e-06,
+          -90.00000250447816,
+          -0.0
         ],
         "shader": "default",
         "shape": "box",
@@ -1101,111 +1108,6 @@ var TestGame = {
         "uuid": "Cube.033"
       },
       {
-        "mass": 0,
-        "position": [
-          -1.0882618427276611,
-          4.469824314117432,
-          1.4172658920288086
-        ],
-        "rotation": [
-          148.17413751463496,
-          -53.55066726285386,
-          53.4360669338648
-        ],
-        "shader": "default",
-        "shape": "box",
-        "size": [
-          0.5,
-          0.800000011920929,
-          3.0
-        ],
-        "syncdirection": 0,
-        "texture": "default",
-        "type": "sync-default",
-        "uuid": "Cube.038"
-      },
-      {
-        "mass": 0,
-        "position": [
-          5.556589126586914,
-          8.395004272460938,
-          6.567604064941406
-        ],
-        "rotation": [
-          0.0,
-          -0.0,
-          -0.0
-        ],
-        "shader": "default",
-        "shape": "box",
-        "size": [
-          0.5,
-          0.5,
-          5.0
-        ],
-        "syncdirection": 0,
-        "texture": "default",
-        "type": "sync-default",
-        "uuid": "Cube.036"
-      },
-      {
-        "mass": 10000.0,
-        "parent": "",
-        "position": [
-          5.156589508056641,
-          1.0450892448425293,
-          5.367603778839111
-        ],
-        "rotation": [
-          0.0,
-          -0.0,
-          -0.0
-        ],
-        "shader": "default",
-        "shape": "box",
-        "size": [
-          0.30000001192092896,
-          8.0,
-          2.5
-        ],
-        "syncdirection": 1,
-        "texture": "default",
-        "type": "sync-default",
-        "uuid": "Cube.037"
-      },
-      {
-        "bodyA": "Cube.036",
-        "bodyB": "Cube.037",
-        "pivotA": [
-          0.0,
-          -0.26944541931152344,
-          -0.9827356338500977
-        ],
-        "pivotB": [
-          0.02552509307861328,
-          4.070732593536377,
-          -1.0201640129089355
-        ],
-        "type": "constraint",
-        "uuid": "Empty"
-      },
-      {
-        "bodyA": "Cube.036",
-        "bodyB": "Cube.037",
-        "pivotA": [
-          0.0,
-          -0.26944541931152344,
-          1.124882698059082
-        ],
-        "pivotB": [
-          0.02552509307861328,
-          4.070732593536377,
-          1.1570706367492676
-        ],
-        "type": "constraint",
-        "uuid": "Empty.006"
-      },
-      {
         "mass": 0.0,
         "position": [
           2.2613296508789062,
@@ -1217,7 +1119,7 @@ var TestGame = {
           -0.0,
           -0.0
         ],
-        "shader": "default",
+        "shader": "string",
         "shape": "box",
         "size": [
           1.0,
@@ -1241,12 +1143,12 @@ var TestGame = {
           -0.0,
           -0.0
         ],
-        "shader": "default",
+        "shader": "string",
         "shape": "box",
         "size": [
-          0.10000002384185791,
+          0.050000011920928955,
           1.0,
-          0.10000002384185791
+          0.050000011920928955
         ],
         "syncdirection": 1,
         "texture": "default",
@@ -1264,7 +1166,7 @@ var TestGame = {
         "pivotB": [
           0.0,
           0.40000057220458984,
-          9.5367431640625e-07
+          4.76837158203125e-07
         ],
         "type": "constraint",
         "uuid": "Empty.003"
@@ -1281,12 +1183,12 @@ var TestGame = {
           -0.0,
           -0.0
         ],
-        "shader": "default",
+        "shader": "string",
         "shape": "box",
         "size": [
-          0.10000002384185791,
+          0.050000011920928955,
           1.0,
-          0.10000002384185791
+          0.050000011920928955
         ],
         "syncdirection": 1,
         "texture": "default",
@@ -1299,12 +1201,12 @@ var TestGame = {
         "pivotA": [
           0.0,
           -0.5,
-          9.5367431640625e-07
+          4.76837158203125e-07
         ],
         "pivotB": [
           0.0,
           0.40000009536743164,
-          9.5367431640625e-07
+          4.76837158203125e-07
         ],
         "type": "constraint",
         "uuid": "Empty.009"
@@ -1321,12 +1223,12 @@ var TestGame = {
           -0.0,
           -0.0
         ],
-        "shader": "default",
+        "shader": "string",
         "shape": "box",
         "size": [
-          0.10000002384185791,
+          0.050000011920928955,
           1.0,
-          0.10000002384185791
+          0.050000011920928955
         ],
         "syncdirection": 1,
         "texture": "default",
@@ -1339,57 +1241,31 @@ var TestGame = {
         "pivotA": [
           0.0,
           -0.5,
-          9.5367431640625e-07
+          4.76837158203125e-07
         ],
         "pivotB": [
           0.0,
           0.40000057220458984,
-          9.5367431640625e-07
+          4.76837158203125e-07
         ],
         "type": "constraint",
         "uuid": "Empty.014"
       },
       {
         "bodyA": "Cube.044",
-        "bodyB": "Cube.045",
+        "bodyB": "Cube.054",
         "pivotA": [
           0.0,
           -0.5,
-          9.5367431640625e-07
+          4.76837158203125e-07
         ],
         "pivotB": [
-          0.0,
-          0.5,
-          -0.0
+          -0.023826122283935547,
+          0.5137453079223633,
+          -0.017727375030517578
         ],
         "type": "constraint",
         "uuid": "Empty.016"
-      },
-      {
-        "isconnected": 1,
-        "mass": 100.0,
-        "opaque": 0,
-        "position": [
-          5.0,
-          5.350001335144043,
-          7.5
-        ],
-        "rotation": [
-          0.0,
-          -0.0,
-          -0.0
-        ],
-        "shader": "default",
-        "shape": "box",
-        "size": [
-          1.0,
-          1.0,
-          1.0
-        ],
-        "syncdirection": 1,
-        "texture": "default",
-        "type": "sync-default",
-        "uuid": "Cube.045"
       },
       {
         "mass": 0,
@@ -1601,9 +1477,9 @@ var TestGame = {
         "model": "easter-egg",
         "opaque": 1,
         "position": [
-          -0.02378714084625244,
-          3.7293481826782227,
-          0.19563990831375122
+          -9.001099586486816,
+          0.0,
+          -4.010618686676025
         ],
         "rotation": [
           0.0,
@@ -1611,9 +1487,9 @@ var TestGame = {
           -0.0
         ],
         "size": [
-          0.40000009536743164,
-          0.40000009536743164,
-          0.40000009536743164
+          2.0,
+          2.0,
+          2.0
         ],
         "syncdirection": 1,
         "texture": "default",
@@ -1651,9 +1527,9 @@ var TestGame = {
         "model": "easter-egg",
         "opaque": 1,
         "position": [
-          -0.3548516035079956,
-          3.7260401248931885,
-          0.8114709854125977
+          -9.001099586486816,
+          0.0,
+          -4.010618686676025
         ],
         "rotation": [
           0.0,
@@ -1661,34 +1537,9 @@ var TestGame = {
           -0.0
         ],
         "size": [
-          0.40000009536743164,
-          0.40000009536743164,
-          0.40000009536743164
-        ],
-        "syncdirection": 1,
-        "texture": "default",
-        "type": "sync-import",
-        "uuid": "Cube.054"
-      },
-      {
-        "isconnected": 1,
-        "mass": 15.0,
-        "model": "easter-egg",
-        "opaque": 1,
-        "position": [
-          -0.6535747051239014,
-          3.9089279174804688,
-          -0.2843605875968933
-        ],
-        "rotation": [
-          0.0,
-          -0.0,
-          -0.0
-        ],
-        "size": [
-          0.40000009536743164,
-          0.40000009536743164,
-          0.40000009536743164
+          2.0,
+          2.0,
+          2.0
         ],
         "syncdirection": 1,
         "texture": "default",
@@ -1701,9 +1552,9 @@ var TestGame = {
         "model": "easter-egg",
         "opaque": 1,
         "position": [
-          -0.028881430625915527,
-          3.8381261825561523,
-          -0.8484420776367188
+          -9.001099586486816,
+          0.0,
+          -4.010618686676025
         ],
         "rotation": [
           0.0,
@@ -1711,9 +1562,9 @@ var TestGame = {
           -0.0
         ],
         "size": [
-          0.40000009536743164,
-          0.40000009536743164,
-          0.40000009536743164
+          2.0,
+          2.0,
+          2.0
         ],
         "syncdirection": 1,
         "texture": "default",
@@ -1751,9 +1602,9 @@ var TestGame = {
         "model": "easter-egg",
         "opaque": 1,
         "position": [
-          0.5604797601699829,
-          3.7088351249694824,
-          0.09258586168289185
+          -9.001099586486816,
+          0.0,
+          -4.010618686676025
         ],
         "rotation": [
           0.0,
@@ -1761,64 +1612,14 @@ var TestGame = {
           -0.0
         ],
         "size": [
-          0.40000009536743164,
-          0.40000009536743164,
-          0.40000009536743164
-        ],
-        "syncdirection": 1,
-        "texture": "default",
-        "type": "sync-import",
-        "uuid": "Cube.058"
-      },
-      {
-        "isconnected": 1,
-        "mass": 15.0,
-        "model": "easter-egg",
-        "opaque": 1,
-        "position": [
-          1.0928698778152466,
-          3.7816784381866455,
-          0.45393216609954834
-        ],
-        "rotation": [
-          0.0,
-          -0.0,
-          -0.0
-        ],
-        "size": [
-          0.40000009536743164,
-          0.40000009536743164,
-          0.40000009536743164
+          2.0,
+          2.0,
+          2.0
         ],
         "syncdirection": 1,
         "texture": "default",
         "type": "sync-import",
         "uuid": "Cube.059"
-      },
-      {
-        "isconnected": 1,
-        "mass": 15.0,
-        "model": "easter-egg",
-        "opaque": 1,
-        "position": [
-          -0.0021795034408569336,
-          3.718068838119507,
-          0.7285565137863159
-        ],
-        "rotation": [
-          0.0,
-          -0.0,
-          -0.0
-        ],
-        "size": [
-          0.40000009536743164,
-          0.40000009536743164,
-          0.40000009536743164
-        ],
-        "syncdirection": 1,
-        "texture": "default",
-        "type": "sync-import",
-        "uuid": "Cube.060"
       },
       {
         "isconnected": 1,
@@ -1851,31 +1652,6 @@ var TestGame = {
         "model": "easter-egg",
         "opaque": 1,
         "position": [
-          1.0801864862442017,
-          3.7925758361816406,
-          -0.7063153386116028
-        ],
-        "rotation": [
-          0.0,
-          -0.0,
-          -0.0
-        ],
-        "size": [
-          0.40000009536743164,
-          0.40000009536743164,
-          0.40000009536743164
-        ],
-        "syncdirection": 1,
-        "texture": "default",
-        "type": "sync-import",
-        "uuid": "Cube.063"
-      },
-      {
-        "isconnected": 1,
-        "mass": 15.0,
-        "model": "easter-egg",
-        "opaque": 1,
-        "position": [
           -0.6264767646789551,
           3.8654160499572754,
           -0.8368961215019226
@@ -1901,9 +1677,9 @@ var TestGame = {
         "model": "easter-egg",
         "opaque": 1,
         "position": [
-          -0.6522376537322998,
-          3.910156488418579,
-          0.1765034794807434
+          -9.001099586486816,
+          0.0,
+          -4.010618686676025
         ],
         "rotation": [
           0.0,
@@ -1911,9 +1687,9 @@ var TestGame = {
           -0.0
         ],
         "size": [
-          0.40000009536743164,
-          0.40000009536743164,
-          0.40000009536743164
+          2.0,
+          2.0,
+          2.0
         ],
         "syncdirection": 1,
         "texture": "default",
@@ -1926,9 +1702,9 @@ var TestGame = {
         "model": "easter-egg",
         "opaque": 1,
         "position": [
-          0.30034148693084717,
-          3.795769453048706,
-          0.6748496294021606
+          -9.001099586486816,
+          0.0,
+          -4.010618686676025
         ],
         "rotation": [
           0.0,
@@ -1936,9 +1712,9 @@ var TestGame = {
           -0.0
         ],
         "size": [
-          0.40000009536743164,
-          0.40000009536743164,
-          0.40000009536743164
+          2.0,
+          2.0,
+          2.0
         ],
         "syncdirection": 1,
         "texture": "default",
@@ -1951,7 +1727,7 @@ var TestGame = {
         "opaque": 0,
         "position": [
           0.0,
-          0.0,
+          -0.10000002384185791,
           -0.0
         ],
         "rotation": [
@@ -1963,7 +1739,7 @@ var TestGame = {
         "shape": "box",
         "size": [
           20.0,
-          0.20000037550926208,
+          0.40000075101852417,
           20.0
         ],
         "syncdirection": 0,
@@ -1996,8 +1772,8 @@ var TestGame = {
         "uuid": "Cube.016"
       },
       {
-        "isconnected": 1,
-        "mass": 500,
+        "isconnected": 0,
+        "mass": 0,
         "model": "pan",
         "opaque": 0,
         "position": [
@@ -2015,10 +1791,223 @@ var TestGame = {
           4.0,
           4.0
         ],
-        "syncdirection": 1,
+        "syncdirection": 0,
         "texture": "default",
         "type": "sync-import",
         "uuid": "Cube.061"
+      },
+      {
+        "isconnected": false,
+        "mass": 50.0,
+        "model": "lantern",
+        "opaque": false,
+        "position": [
+          -4.060217380523682,
+          1.3739502429962158,
+          1.2534832954406738
+        ],
+        "rotation": [
+          0.0,
+          -0.0,
+          -0.0
+        ],
+        "size": [
+          2.0,
+          2.0,
+          2.0
+        ],
+        "syncdirection": true,
+        "texture": "default",
+        "type": "sync-import",
+        "uuid": "Cube.067"
+      },
+      {
+        "mass": 10.0,
+        "position": [
+          -2.4130077362060547,
+          7.894242763519287,
+          3.627469301223755
+        ],
+        "rotation": [
+          0.0,
+          -0.0,
+          -0.0
+        ],
+        "shader": "string",
+        "shape": "box",
+        "size": [
+          0.020000003278255463,
+          2.684891939163208,
+          0.020000003278255463
+        ],
+        "syncdirection": 1,
+        "texture": "default",
+        "type": "sync-default",
+        "uuid": "Cube.069"
+      },
+      {
+        "bodyA": "Cube.069",
+        "bodyB": "Cube.067",
+        "pivotA": [
+          0.0,
+          -1.3431286811828613,
+          -0.0
+        ],
+        "pivotB": [
+          -0.0003476142883300781,
+          1.3526453971862793,
+          0.004250526428222656
+        ],
+        "type": "constraint",
+        "uuid": "Empty.027"
+      },
+      {
+        "bodyA": "Cube.068",
+        "bodyB": "Cube.069",
+        "pivotA": [
+          -1.7248274087905884,
+          -0.4984760284423828,
+          1.257734775543213
+        ],
+        "pivotB": [
+          0.0,
+          1.3401951789855957,
+          2.384185791015625e-07
+        ],
+        "type": "constraint",
+        "uuid": "Empty.025"
+      },
+      {
+        "isconnected": 0,
+        "mass": 0,
+        "opaque": 0,
+        "position": [
+          0.0,
+          9.90000057220459,
+          -0.0
+        ],
+        "rotation": [
+          0.0,
+          -0.0,
+          -0.0
+        ],
+        "shader": "floor",
+        "shape": "box",
+        "size": [
+          20.0,
+          0.20000037550926208,
+          20.0
+        ],
+        "syncdirection": 0,
+        "texture": "default",
+        "type": "sync-default",
+        "uuid": "Cube.068"
+      },
+      {
+        "mass": 10.0,
+        "position": [
+          0.0692605972290039,
+          8.710892677307129,
+          0.7540435791015625
+        ],
+        "rotation": [
+          0.0,
+          -0.0,
+          -0.0
+        ],
+        "shader": "string",
+        "shape": "box",
+        "size": [
+          0.020000003278255463,
+          1.2302093505859375,
+          0.020000003278255463
+        ],
+        "syncdirection": 1,
+        "texture": "default",
+        "type": "sync-default",
+        "uuid": "Cube.070"
+      },
+      {
+        "bodyA": "Cube.071",
+        "bodyB": "Cube.070",
+        "pivotA": [
+          -0.00034737586975097656,
+          1.3526453971862793,
+          0.004250526428222656
+        ],
+        "pivotB": [
+          0.0,
+          -0.6162748336791992,
+          2.384185791015625e-07
+        ],
+        "type": "constraint",
+        "uuid": "Empty.030"
+      },
+      {
+        "isconnected": false,
+        "mass": 50.0,
+        "model": "lantern",
+        "opaque": false,
+        "position": [
+          -0.15641045570373535,
+          6.457298755645752,
+          1.2534832954406738
+        ],
+        "rotation": [
+          0.0,
+          -0.0,
+          -0.0
+        ],
+        "size": [
+          2.0,
+          2.0,
+          2.0
+        ],
+        "syncdirection": true,
+        "texture": "default",
+        "type": "sync-import",
+        "uuid": "Cube.071"
+      },
+      {
+        "bodyA": "Cube.068",
+        "bodyB": "Cube.070",
+        "pivotA": [
+          0.0692605972290039,
+          -0.4984760284423828,
+          0.7540445327758789
+        ],
+        "pivotB": [
+          0.0,
+          0.615849494934082,
+          2.384185791015625e-07
+        ],
+        "type": "constraint",
+        "uuid": "Empty.035"
+      },
+      {
+        "isconnected": false,
+        "mass": 50.0,
+        "model": "lantern",
+        "opaque": false,
+        "position": [
+          5.0238261222839355,
+          5.33625602722168,
+          7.517727375030518
+        ],
+        "rotation": [
+          0.0,
+          -0.0,
+          -0.0
+        ],
+        "size": [
+          1.0,
+          1.0,
+          1.0
+        ],
+        "syncdirection": true,
+        "texture": "default",
+        "type": "sync-import",
+        "uuid": "Cube.054"
       }
     ]
   }

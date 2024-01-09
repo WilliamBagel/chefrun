@@ -18,7 +18,7 @@ function init(character) {
   gameLoad = world.loadGame(TestGame);
   window.game = gameLoad;
   world.initGame();
-  ToolBarActive.value = world.mechanics._Toolbar
+  // ToolBarActive.value = world.mechanics._Toolbar
   world.addGameLoadListener(() => {
     gameLoad.character.body.isCharacter = true;
     const members = MyConnection.members;
